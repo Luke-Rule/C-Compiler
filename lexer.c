@@ -129,6 +129,7 @@ tkn_list* get_tokens(FILE *file_pointer){
         token_return = get_next_token(file_pointer);
     }
     append_token(token_list, token_return.token);
+    fclose(file_pointer);
     return token_list->pointer;
 }
 

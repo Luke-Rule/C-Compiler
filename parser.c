@@ -150,21 +150,3 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             break;
     }
 }
-
-int main(){
-    FILE *file_pointer;
-    file_pointer = fopen("file.txt", "r");
-    tkn_list *token_list = typify_tokens(get_tokens(file_pointer));
-    ast* root;
-    root = (ast *)malloc(sizeof(ast));
-    root->child = (ast *)malloc(sizeof(ast));
-    root->child->root = NULL;
-    root->child->child = NULL;
-    root->child->sibling = NULL;
-    if (parse(token_list, PROGRAM_SYMBOL, root).valid){
-        printf("%c", 't');
-    }
-    else{
-        printf("%c", 'f');
-    }
-}

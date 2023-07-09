@@ -1,1 +1,3 @@
-int 
+int function () {
+    return 0;
+}

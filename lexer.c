@@ -3,9 +3,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-typedef struct string{
+typedef struct str{
     char character;
-    struct string *pointer;
+    struct str *pointer;
 } str;
 
 typedef enum token_type{
@@ -14,22 +14,26 @@ typedef enum token_type{
     OPEN_PARENTHESES,
     CLOSED_PARENTHESES,
     SEMICOLON,
-    INT,
-    RETURN,
+    INT_KEYWORD,
+    RETURN_KEYWORD,
     IDENTIFIER,
     INT_LITERAL,
-    INVALID
+    INVALID,
+    PROGRAM,
+    FUNCTION,
+    STATEMENT,
+    EXPRESSION
 } tkn_type;
 
-typedef struct token{
+typedef struct tkn{
     str name;
     int value;
     enum token_type type;
 } tkn;
 
-typedef struct token_list{
+typedef struct tkn_list{
     tkn token;
-    struct token_list *pointer;
+    struct tkn_list *pointer;
 } tkn_list;
 
 typedef struct tkn_return{
@@ -79,12 +83,21 @@ tkn_return get_next_token(FILE *file_pointer){
     token_string = (str *)malloc(sizeof(str));
     token_string->pointer = NULL;
     character=fgetc(file_pointer);
-    while (character != EOF & character != ' ' & character != '\n'){
+    while (character == ' ' | character == '\n'){
+        character=fgetc(file_pointer);
+    }
+    if (character == '{' | character == '}' | character == '(' | character == ')' | character == ';'){
+        append_string(token_string, character);
+    }
+    while (character != EOF & character != ' ' & character != '\n'& character != '{' & character != '}' & character != '(' & character != ')' & character != ';'){
         append_string(token_string, character);
         if (!first & isdigit(character)){
             first = true;
         }
         character=fgetc(file_pointer);
+        if (character == '{' | character == '}' | character == '(' | character == ')' | character == ';'){
+            fseek(file_pointer, -1, SEEK_CUR);
+        }
     }
     tkn token;
     if (token_string->pointer != NULL){
@@ -116,7 +129,7 @@ tkn_list* get_tokens(FILE *file_pointer){
         token_return = get_next_token(file_pointer);
     }
     append_token(token_list, token_return.token);
-    return token_list;
+    return token_list->pointer;
 }
 
 void print_token(tkn token){
@@ -154,28 +167,23 @@ tkn_type typify_token(tkn *token){
     switch (name.character)
         {
         case '{':
-            type = OPEN_BRACE;
-            end = true;
+            return OPEN_BRACE;
             break;
 
         case '}':
-            type = CLOSED_BRACE;
-            end = true;
+            return CLOSED_BRACE;
             break;
 
         case '(':
-            type = OPEN_PARENTHESES;
-            end = true;
+            return OPEN_PARENTHESES;
             break;
 
         case ')':
-            type = CLOSED_PARENTHESES;
-            end = true;
+            return CLOSED_PARENTHESES;
             break;
         
         case ';':
-            type = SEMICOLON;
-            end = true;
+            return SEMICOLON;
             break;
 
         case 'r':
@@ -209,7 +217,7 @@ tkn_type typify_token(tkn *token){
             possible_int_keyword = false;
         }
         else if (possible_int_keyword){
-            return INT;
+            return INT_KEYWORD;
         }
     }
 
@@ -230,16 +238,8 @@ tkn_type typify_token(tkn *token){
             possible_return_keyword = false;
         }
         else if (possible_return_keyword){
-            return RETURN;
+            return RETURN_KEYWORD;
         }
-    }
-
-    if (end & name.pointer != NULL){
-        return INVALID;
-    }
-
-    if (end){
-        return type;
     }
 
     name = *temp;
@@ -250,7 +250,7 @@ tkn_type typify_token(tkn *token){
             }
             name = *name.pointer;
         }
-        if (!isdigit(name.character) | !is_valid_char(name.character)){
+        if (!isdigit(name.character)){
             return INVALID;
         }
         return INT_LITERAL;
@@ -273,16 +273,10 @@ tkn_type typify_token(tkn *token){
 tkn_list* typify_tokens(tkn_list *token_list){
     tkn_list *temp = token_list;
     tkn *token = &token_list->token;
-    while (token_list != NULL){
+    while (token_list->pointer != NULL){
         token = &token_list->token;
         token->type = typify_token(token);
         token_list = token_list->pointer;
     }
     return temp;
-}
-
-int main(){
-    FILE *file_pointer;
-    file_pointer = fopen("file.txt", "r");
-    tkn_list *token_list = typify_tokens(get_tokens(file_pointer));
 }

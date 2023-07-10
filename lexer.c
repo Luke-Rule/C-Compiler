@@ -22,7 +22,10 @@ typedef enum token_type{
     PROGRAM,
     FUNCTION,
     STATEMENT,
-    EXPRESSION
+    EXPRESSION,
+    NEGATION,
+    BITWISE_COMPLEMENT,
+    LOGICAL_NEGATION
 } tkn_type;
 
 typedef struct tkn{
@@ -76,6 +79,16 @@ int get_int_value(str *string, int count){
     return count;
 }
 
+bool is_ending_token(char character){
+    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '!'};
+    for (int i = 0; i<8; i++){
+        if (character==ending_tokens[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
 tkn_return get_next_token(FILE *file_pointer){
     char character;
     bool first = false;
@@ -86,16 +99,16 @@ tkn_return get_next_token(FILE *file_pointer){
     while (character == ' ' | character == '\n'){
         character=fgetc(file_pointer);
     }
-    if (character == '{' | character == '}' | character == '(' | character == ')' | character == ';'){
+    if (is_ending_token(character)){
         append_string(token_string, character);
     }
-    while (character != EOF & character != ' ' & character != '\n'& character != '{' & character != '}' & character != '(' & character != ')' & character != ';'){
+    while (character != EOF & character != ' ' & character != '\n' & !is_ending_token(character)){
         append_string(token_string, character);
         if (!first & isdigit(character)){
             first = true;
         }
         character=fgetc(file_pointer);
-        if (character == '{' | character == '}' | character == '(' | character == ')' | character == ';'){
+        if (is_ending_token(character)){
             fseek(file_pointer, -1, SEEK_CUR);
         }
     }
@@ -187,6 +200,18 @@ tkn_type typify_token(tkn *token){
             return SEMICOLON;
             break;
 
+        case '-':
+            return NEGATION;
+            break;
+
+        case '~':
+            return BITWISE_COMPLEMENT;
+            break;
+        
+        case '!':
+            return LOGICAL_NEGATION;
+            break;
+
         case 'r':
             possible_return_keyword = true;
             break;
@@ -247,11 +272,13 @@ tkn_type typify_token(tkn *token){
     if (isdigit(name.character)){
         while (name.pointer != NULL){
             if (!isdigit(name.character) | !is_valid_char(name.character)){
+                printf("%s", "Invalid token");
                 return INVALID;
             }
             name = *name.pointer;
         }
         if (!isdigit(name.character)){
+            printf("%s", "Invalid token");
             return INVALID;
         }
         return INT_LITERAL;
@@ -264,10 +291,12 @@ tkn_type typify_token(tkn *token){
             name = *name.pointer;
         }
         if (!is_valid_char(name.character)){
+            printf("%s", "Invalid token");
             return INVALID;
         }
         return IDENTIFIER;
     }
+    printf("%s", "Invalid token");
     return INVALID;
 }
 

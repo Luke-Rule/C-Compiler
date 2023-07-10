@@ -13,7 +13,8 @@ typedef enum non_terminal{
     PROGRAM_SYMBOL,
     FUNCTION_SYMBOL, 
     STATEMENT_SYMBOL,
-    EXPRESSION_SYMBOL
+    EXPRESSION_SYMBOL,
+    UNARY_OP_SYMBOL
 } non_terminal;
 
 typedef struct parse_return{
@@ -42,7 +43,9 @@ ast* initialise_sibling(ast *node, tkn token){
 
 parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
     ast *node;
+    ast* test_root;
     node = (ast *)malloc(sizeof(ast));
+    test_root = (ast *)malloc(sizeof(ast));
     tkn function;
     function.type = FUNCTION;
     tkn expression;
@@ -64,6 +67,7 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             }
             return_value.token_list = token_list;
             return_value.valid = false;
+            printf("%s", "invalid token order");
             return return_value;
             break;
 
@@ -130,6 +134,13 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             break;
         
         case EXPRESSION_SYMBOL:
+            if (token_list->token.type == NEGATION | token_list->token.type == LOGICAL_NEGATION | token_list->token.type == BITWISE_COMPLEMENT){
+                node = initialise_child(root, token_list->token);
+                token_list = token_list->pointer;
+                return_value.token_list = token_list;
+                node = initialise_sibling(node, expression);
+                return parse(token_list, EXPRESSION_SYMBOL, node);
+            }
             if (token_list->token.type == INT_LITERAL){
                 node = initialise_child(root, token_list->token);
                 token_list = token_list->pointer;

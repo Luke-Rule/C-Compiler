@@ -18,14 +18,23 @@ typedef enum token_type{
     RETURN_KEYWORD,
     IDENTIFIER,
     INT_LITERAL,
+    NEGATION,
+    BITWISE_COMPLEMENT,
+    LOGICAL_NEGATION,
+    ADDITION,
+    DIVISION,
+    SUBTRACTION,
+    MULTIPLICATION,
+
     INVALID,
+
     PROGRAM,
     FUNCTION,
     STATEMENT,
     EXPRESSION,
-    NEGATION,
-    BITWISE_COMPLEMENT,
-    LOGICAL_NEGATION
+    TERM,
+    FACTOR,
+    UNARY_OP
 } tkn_type;
 
 typedef struct tkn{
@@ -80,8 +89,8 @@ int get_int_value(str *string, int count){
 }
 
 bool is_ending_token(char character){
-    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '!'};
-    for (int i = 0; i<8; i++){
+    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '!', '+', '/', '*'};
+    for (int i = 0; i<11; i++){
         if (character==ending_tokens[i]){
             return true;
         }
@@ -172,7 +181,7 @@ bool is_valid_char(char character){
     return false;
 }
 
-tkn_type typify_token(tkn *token){
+tkn_type typify_token(tkn *token, tkn *previous){
     str name = token->name;
     bool end = false;
     bool possible_return_keyword = false;
@@ -201,6 +210,9 @@ tkn_type typify_token(tkn *token){
             break;
 
         case '-':
+            if (previous->type == INT_LITERAL){
+                return SUBTRACTION;
+            }
             return NEGATION;
             break;
 
@@ -210,6 +222,18 @@ tkn_type typify_token(tkn *token){
         
         case '!':
             return LOGICAL_NEGATION;
+            break;
+
+        case '+':
+            return ADDITION;
+            break;
+
+        case '/':
+            return DIVISION;
+            break;
+        
+        case '*':
+            return MULTIPLICATION;
             break;
 
         case 'r':
@@ -304,8 +328,9 @@ tkn_list* typify_tokens(tkn_list *token_list){
     tkn_list *temp = token_list;
     tkn *token = &token_list->token;
     while (token_list->pointer != NULL){
+        tkn *previous = token;
         token = &token_list->token;
-        token->type = typify_token(token);
+        token->type = typify_token(token, previous);
         token_list = token_list->pointer;
     }
     return temp;

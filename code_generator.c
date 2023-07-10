@@ -5,89 +5,171 @@
 //gcc assembly.s -o executable_name
 //echo %errorlevel%
 
-void generate_code(ast* ast){
-    FILE *file;
-    file = fopen("assembly.s", "w");
-    fputs("    .globl ", file);
-    while (ast->child!=NULL){
-        ast = ast->child;
+void generate_code(ast* root, FILE *file){
+    if (root->token.type == INT_LITERAL){
+        root->visited = true;
+        fputs("    mov $", file);
+        str name = root->token.name;
+        while (name.pointer != NULL){
+            fputc(name.character, file);
+            name = *name.pointer;
+        }
+        fputc(name.character, file);
+        fputs(", \%rax\n", file);
+        fputs("    pushq \%rax\n", file);
+        root = root->root;
+        if (root->past_sibling != NULL && (root->past_sibling->token.type == NEGATION | root->past_sibling->token.type == LOGICAL_NEGATION | root->past_sibling->token.type == BITWISE_COMPLEMENT)){
+            generate_code(root->past_sibling, file);
+        }
+        else{
+            generate_code(root, file);
+        }
     }
-    ast = ast->sibling;
-    if (ast->token.type == IDENTIFIER){
-        str name = ast->token.name;
-        str temp = name;
-        while (name.pointer != NULL){
-            fputc(name.character, file);
-            name = *name.pointer;
+    else if (root->token.type == NEGATION){
+        root->visited = true;
+        fputs("    pop \%rax\n", file);
+        fputs("    neg \%rax\n", file);
+        fputs("    pushq \%rax\n", file);
+        root = root->root;
+        if (root->past_sibling != NULL){
+            generate_code(root->sibling, file);
         }
-        fputc(name.character, file);
-        fputs("\n", file);
+        else{
+            generate_code(root->root, file);
+        }
+    }
+    else if (root->token.type == BITWISE_COMPLEMENT){
+        root->visited = true;
+        fputs("    pop \%rax\n", file);
+        fputs("    not \%rax\n", file);
+        fputs("    pushq \%rax\n", file);
+        root = root->root;
+        if (root->past_sibling != NULL){
+            generate_code(root->sibling, file);
+        }
+        else{
+            generate_code(root->root, file);
+        }
+    }
+    else if (root->token.type == NEGATION){
+        root->visited = true;
+        fputs("    pop \%rax\n", file);
+        fputs("    cmp $0, \%rax\n    movl $0, \%rax\n    sete \%al\n", file);
+        fputs("    pushq \%rax\n", file);
+        root = root->root;
+        if (root->past_sibling != NULL){
+            generate_code(root->sibling, file);
+        }
+        else{
+            generate_code(root->root, file);
+        }
+    }
+    else if (root->token.type == FACTOR & root->visited & root->past_sibling == NULL){
+        root->visited = true;
+        if (root->sibling != NULL){
+            generate_code(root->sibling->sibling, file);
+        }
+        else{
+            generate_code(root->root, file);
+        }
+    }
+    else if (root->token.type == FACTOR & !root->visited){
+        while (root->token.type != INT_LITERAL){
+            root->visited = true;
+            if (root->child != NULL){
+                root = root->child;
+            }
+            else{
+                root = root->sibling;
+            }
+        }
+        generate_code(root, file);
+    }
+    else if (root->token.type == FACTOR){
+        root->visited = true;
+        generate_code(root->past_sibling, file);
+    }
+    else if (root->token.type == MULTIPLICATION){
+        root->visited = true;
+        fputs("    pop \%rax\n", file);
+        fputs("    pop \%rcx\n", file);
+        fputs("    imul \%rcx, \%rax\n", file);
+        fputs("    pushq \%rax\n", file);
+        if (root->sibling->sibling != NULL){
+            generate_code(root->sibling->sibling->sibling, file);
+        }
+        else{
+            generate_code(root->root, file);
+        }
+    }
+    else if (root->token.type == DIVISION){
+        root->visited = true;
+        fputs("    pop \%rax\n", file);
+        fputs("    pop \%rcx\n", file);
+        fputs("    imul \%rcx, \%rax\n", file);
+        fputs("    pushq \%rax\n", file);
+        if (root->sibling->sibling != NULL){
+            generate_code(root->sibling->sibling->sibling, file);
+        }
+        else{
+            generate_code(root->root, file);
+        }
+    }
 
-        name = temp;
-        while (name.pointer != NULL){
-            fputc(name.character, file);
-            name = *name.pointer;
+
+    else if (root->token.type == TERM & root->visited & root->past_sibling == NULL){
+        root->visited = true;
+        if (root->sibling != NULL){
+            generate_code(root->sibling->sibling, file);
         }
-        fputc(name.character, file);
-        fputs(":\n    movl    $", file);
-        ast = ast->sibling;
-        ast = ast->sibling;
-        ast = ast->sibling;
-        ast = ast->sibling;
-        ast = ast->child;
-        ast = ast->sibling;
-        ast = ast->child;
-        int negation_counter = 0;
-        int logical_negation_counter = 0;
-        int bitwise_complement_counter = 0;
-        while (ast->token.type == NEGATION | ast->token.type == LOGICAL_NEGATION | ast->token.type == BITWISE_COMPLEMENT){
-            if (ast->token.type == NEGATION){
-                if (negation_counter == 0){
-                    negation_counter++;
-                }
-                else{
-                    negation_counter = 0;
-                }
+        else{
+            generate_code(root->root, file);
+        }
+    }
+    else if (root->token.type == TERM & !root->visited){
+        while (root->token.type != INT_LITERAL){
+            root->visited = true;
+            if (root->child != NULL){
+                root = root->child;
             }
-            if (ast->token.type == LOGICAL_NEGATION){
-                if (logical_negation_counter == 0){
-                    logical_negation_counter++;
-                }
-                else{
-                    logical_negation_counter = 0;
-                }
+            else{
+                root = root->sibling;
             }
-            if (ast->token.type == BITWISE_COMPLEMENT){
-                if (bitwise_complement_counter == 0){
-                    bitwise_complement_counter++;
-                }
-                else{
-                    bitwise_complement_counter = 0;
-                }
-            }
-            ast = ast->sibling;
-            ast = ast->child;
         }
-        if (ast->token.type == INT_LITERAL){
-            str name = ast->token.name;
-            while (name.pointer != NULL){
-                fputc(name.character, file);
-                name = *name.pointer;
-            }
-            fputc(name.character, file);
+        generate_code(root, file);
+    }
+    else if (root->token.type == TERM){
+        root->visited = true;
+        generate_code(root->past_sibling, file);
+    }
+    else if (root->token.type == ADDITION){
+        root->visited = true;
+        fputs("    pop \%rax\n", file);
+        fputs("    pop \%rcx\n", file);
+        fputs("    add \%rcx, \%rax\n", file);
+        fputs("    pushq \%rax\n", file);
+        if (root->sibling->sibling != NULL){
+            generate_code(root->sibling->sibling->sibling, file);
         }
-        fputs(", \%eax\n", file);
-        if (negation_counter>0){
-            fputs("    neg    \%eax\n", file);
+        else{
+            generate_code(root->root, file);
         }
-        if (bitwise_complement_counter>0){
-            fputs("    not    \%eax\n", file);
+    }
+    else if (root->token.type == SUBTRACTION){
+        root->visited = true;
+        fputs("    pop \%rax\n", file);
+        fputs("    pop \%rcx\n", file);
+        fputs("    sub \%rcx, \%rax\n", file);
+        fputs("    pushq \%rax\n", file);
+        if (root->sibling->sibling != NULL){
+            generate_code(root->sibling->sibling->sibling, file);
         }
-        if (logical_negation_counter>0){
-            fputs("    cmpl $0, \%eax\n    movl $0, \%eax\n    sete    \%al\n", file);
+        else{
+            generate_code(root->root, file);
         }
-        fputs("    ret\n", file);
-        fclose(file);
+    }
+    else if (root->token.type == EXPRESSION & root->root->token.type == FACTOR){
+        generate_code(root->root, file);
     }
 }
 
@@ -106,8 +188,53 @@ int main(){
     root->child->child = NULL;
     root->child->sibling = NULL;
     parse_return return_value = parse(token_list, PROGRAM_SYMBOL, root);
+    root = return_value.root;
     if (return_value.valid){
         printf("%c", 't');
-        generate_code(return_value.root);
+        FILE *file;
+        file = fopen("assembly.s", "w");
+        fputs("    .globl ", file);
+        while (root->child!=NULL){
+            root = root->child;
+        }
+        root = root->sibling;
+        if (root->token.type == IDENTIFIER){
+            str name = root->token.name;
+            str temp = name;
+            while (name.pointer != NULL){
+                fputc(name.character, file);
+                name = *name.pointer;
+            }
+            fputc(name.character, file);
+            fputs("\n", file);
+
+            name = temp;
+            while (name.pointer != NULL){
+                fputc(name.character, file);
+                name = *name.pointer;
+            }
+            fputc(name.character, file);
+            fputs(":\n", file);
+            root = root->sibling;
+            root = root->sibling;
+            root = root->sibling;
+            root = root->sibling;
+            root = root->child;
+            root = root->sibling;
+            while (root->token.type != INT_LITERAL){
+                root->visited = true;
+                if (root->child != NULL){
+                    root = root->child;
+                }
+                else{
+                    root = root->sibling;
+                }
+            }
+            generate_code(root, file);
+            fclose(file);
+            file = fopen("assembly.s", "a");
+            fputs("    pop \%rax\n    ret\n", file);
+            fclose(file);
+        }
     }
 }

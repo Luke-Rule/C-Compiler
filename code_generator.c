@@ -30,7 +30,6 @@ void generate_code(ast* root, FILE *file){
         fputs("    pop \%rax\n", file);
         fputs("    neg \%rax\n", file);
         fputs("    pushq \%rax\n", file);
-        root = root->root;
         if (root->past_sibling != NULL){
             generate_code(root->sibling, file);
         }
@@ -43,7 +42,6 @@ void generate_code(ast* root, FILE *file){
         fputs("    pop \%rax\n", file);
         fputs("    not \%rax\n", file);
         fputs("    pushq \%rax\n", file);
-        root = root->root;
         if (root->past_sibling != NULL){
             generate_code(root->sibling, file);
         }
@@ -56,7 +54,6 @@ void generate_code(ast* root, FILE *file){
         fputs("    pop \%rax\n", file);
         fputs("    cmp $0, \%rax\n    movl $0, \%rax\n    sete \%al\n", file);
         fputs("    pushq \%rax\n", file);
-        root = root->root;
         if (root->past_sibling != NULL){
             generate_code(root->sibling, file);
         }
@@ -104,9 +101,11 @@ void generate_code(ast* root, FILE *file){
     }
     else if (root->token.type == DIVISION){
         root->visited = true;
+        fputs("    pop \%rbx\n", file);
         fputs("    pop \%rax\n", file);
-        fputs("    pop \%rcx\n", file);
-        fputs("    imul \%rcx, \%rax\n", file);
+        fputs("    mov \%eax, \%eax\n", file);
+        fputs("    cdq\n", file);
+        fputs("    idiv \%ebx\n", file);
         fputs("    pushq \%rax\n", file);
         if (root->sibling->sibling != NULL){
             generate_code(root->sibling->sibling->sibling, file);

@@ -25,6 +25,14 @@ typedef enum token_type{
     DIVISION,
     SUBTRACTION,
     MULTIPLICATION,
+    AND,
+    OR,
+    EQUAL,
+    NOT_EQUAL,
+    LESS_THAN,
+    LESS_THAN_OR_EQUAL,
+    GREATER_THAN,
+    GREATER_THAN_OR_EQUAL,
 
     INVALID,
 
@@ -32,6 +40,10 @@ typedef enum token_type{
     FUNCTION,
     STATEMENT,
     EXPRESSION,
+    LOGICAL_AND_EXPRESSION,
+    EQUALITY_EXPRESSION,
+    RELATIONAL_EXPRESSION,
+    ADDITIVE_EXPRESSION,
     TERM,
     FACTOR,
     UNARY_OP
@@ -89,9 +101,39 @@ int get_int_value(str *string, int count){
 }
 
 bool is_ending_token(char character){
-    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '!', '+', '/', '*'};
-    for (int i = 0; i<11; i++){
+    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '!', '+', '/', '*', '&', '|', '=', '<', '>'};
+    for (int i = 0; i<16; i++){
         if (character==ending_tokens[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_ending_token_exc_comparators(char character){
+    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '+', '/', '*'};
+    for (int i = 0; i<10; i++){
+        if (character==ending_tokens[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_ending_token_for_comparators(char character){
+    char valid_chars[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','_','1','2','3','4','5','6','7','8','9','0', '(', ')', '{', '}', ';', '-', '~', '+', '/', '*'};
+    for (int i = 0; i<26*2+11+10; i++){
+        if (character==valid_chars[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_comparator(char character){
+    char comparator_tokens[] = {'!', '&', '|', '=', '<', '>'};
+    for (int i = 0; i<6; i++){
+        if (character==comparator_tokens[i]){
             return true;
         }
     }
@@ -100,7 +142,9 @@ bool is_ending_token(char character){
 
 tkn_return get_next_token(FILE *file_pointer){
     char character;
+    char last_character;
     bool first = false;
+    bool end = false;
     str *token_string;
     token_string = (str *)malloc(sizeof(str));
     token_string->pointer = NULL;
@@ -108,17 +152,28 @@ tkn_return get_next_token(FILE *file_pointer){
     while (character == ' ' | character == '\n'){
         character=fgetc(file_pointer);
     }
-    if (is_ending_token(character)){
+    if (is_ending_token_exc_comparators(character)){
+        end = true;
         append_string(token_string, character);
     }
-    while (character != EOF & character != ' ' & character != '\n' & !is_ending_token(character)){
+    while (character != EOF & character != ' ' & character != '\n' & !end){
         append_string(token_string, character);
         if (!first & isdigit(character)){
             first = true;
         }
+        last_character = character;
         character=fgetc(file_pointer);
-        if (is_ending_token(character)){
+        if (!is_comparator(last_character) & is_ending_token(character)){
+            end = true;
             fseek(file_pointer, -1, SEEK_CUR);
+        }
+        if (is_comparator(last_character) & (is_ending_token_for_comparators(character) | character == '!')){
+            end = true;
+            fseek(file_pointer, -1, SEEK_CUR);
+        }
+        else if (is_comparator(last_character)){
+            append_string(token_string, character);
+            end = true;
         }
     }
     tkn token;
@@ -221,7 +276,13 @@ tkn_type typify_token(tkn *token, tkn *previous){
             break;
         
         case '!':
-            return LOGICAL_NEGATION;
+            if (name.pointer != NULL && name.pointer->character == '=' && name.pointer->pointer == NULL){
+                return NOT_EQUAL;
+            }
+            if (name.pointer == NULL){
+                return LOGICAL_NEGATION;
+            }
+            return INVALID;
             break;
 
         case '+':
@@ -234,6 +295,47 @@ tkn_type typify_token(tkn *token, tkn *previous){
         
         case '*':
             return MULTIPLICATION;
+            break;
+        
+        case '&':
+            if (name.pointer != NULL && name.pointer->character == '&' && name.pointer->pointer == NULL){
+                return AND;
+            }
+            return INVALID;
+            break;
+
+        case '|':
+            if (name.pointer != NULL && name.pointer->character == '|' && name.pointer->pointer == NULL){
+                return OR;
+            }
+            return INVALID;
+            break;
+
+        case '=':
+            if (name.pointer != NULL && name.pointer->character == '=' && name.pointer->pointer == NULL){
+                return EQUAL;
+            }
+            return INVALID;
+            break;
+
+        case '<':
+            if (name.pointer != NULL && name.pointer->character == '=' && name.pointer->pointer == NULL){
+                return LESS_THAN_OR_EQUAL;
+            }
+            if (name.pointer == NULL){
+                return LESS_THAN;
+            }
+            return INVALID;
+            break;
+
+        case '>':
+            if (name.pointer != NULL && name.pointer->character == '=' && name.pointer->pointer == NULL){
+                return GREATER_THAN_OR_EQUAL;
+            }
+            if (name.pointer == NULL){
+                return GREATER_THAN;
+            }
+            return INVALID;
             break;
 
         case 'r':

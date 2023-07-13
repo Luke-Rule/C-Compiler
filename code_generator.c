@@ -7,8 +7,70 @@
 //echo %errorlevel%
 int and_jump_count = 0;
 int or_jump_count = 0;
-char number_string[1000];
+char number_string[10000];
 
+typedef struct local_variable{
+    str token_name;
+    int index;
+} local_variable;
+
+bool function_returned = false;
+
+bool is_name_equal(str name1, str name2){
+    bool equal = true;
+    if (name1.character != name2.character){
+        return false;
+    }
+    while (name1.pointer != NULL & name2.pointer != NULL & equal){
+        if (name1.character==name2.character){
+            name1 = *name1.pointer;
+            name2 = *name2.pointer;
+        }
+        else{
+            equal = false;
+        }
+    }
+    if (equal){
+        if (name1.pointer != NULL & name2.pointer == NULL){
+            equal = false;
+        }
+        
+        if (name1.pointer == NULL & name2.pointer != NULL){
+            equal = false;
+        }
+    }
+    return equal;
+}
+
+int current_local_variable_count = 0;
+int current_local_variable_byte_count = 0;
+local_variable local_variable_map[10000];
+
+void add_to_local_variable_map(str name){
+    local_variable variable;
+    variable.token_name = name;
+    current_local_variable_byte_count = current_local_variable_byte_count+8;
+    variable.index = current_local_variable_byte_count;
+    local_variable_map[current_local_variable_count] = variable;
+    current_local_variable_count++;
+}
+
+bool is_in_local_variable_map(str name){
+    for (int i = 0; i < current_local_variable_count; i++){
+        if (is_name_equal(name, local_variable_map[i].token_name)){
+            return true;
+        }
+    }
+    return false;
+}
+
+int get_local_variable_index(str name){
+    for (int i = 0; i < current_local_variable_count; i++){
+        if (is_name_equal(name, local_variable_map[i].token_name)){
+            return -local_variable_map[i].index;
+        }
+    }
+}
 
 void generate_code(ast* root, FILE *file){
     switch (root->token.type){
@@ -29,6 +91,31 @@ void generate_code(ast* root, FILE *file){
             }
             else{
                 generate_code(root, file);
+            }
+            break;
+        
+        case IDENTIFIER:
+            name = root->token.name;
+            if (is_in_local_variable_map(name)){
+                root->visited = true;
+                fputs("    mov ", file);
+                sprintf(number_string, "%d", get_local_variable_index(name));
+                fputs(number_string, file);
+                fputs("(\%rbp), \%rax\n", file);
+                fputs("    pushq \%rax\n", file);
+                root = root->root;
+                if (root->past_sibling != NULL && (root->past_sibling->token.type == NEGATION | root->past_sibling->token.type == LOGICAL_NEGATION | root->past_sibling->token.type == BITWISE_COMPLEMENT)){
+                    generate_code(root->past_sibling, file);
+                }
+                else{
+                    generate_code(root, file);
+                }
+            }
+            else if (root->past_sibling != NULL && root->past_sibling->token.type == INT_KEYWORD){
+                generate_code(root->root, file);
+            }
+            else{
+                printf("%s", "Variable not declared");
             }
             break;
         
@@ -82,7 +169,7 @@ void generate_code(ast* root, FILE *file){
                 }
             }
             else if (!root->visited){
-                while (root->token.type != INT_LITERAL){
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
                     root->visited = true;
                     if (root->child != NULL){
                         root = root->child;
@@ -115,11 +202,11 @@ void generate_code(ast* root, FILE *file){
         
         case DIVISION:
             root->visited = true;
-            fputs("    pop \%rbx\n", file);
+            fputs("    pop \%rcx\n", file);
             fputs("    pop \%rax\n", file);
             fputs("    mov \%eax, \%eax\n", file);
             fputs("    cdq\n", file);
-            fputs("    idiv \%ebx\n", file);
+            fputs("    idiv \%ecx\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file);
@@ -140,7 +227,7 @@ void generate_code(ast* root, FILE *file){
                 }
             }
             else if (!root->visited){
-                while (root->token.type != INT_LITERAL){
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
                     root->visited = true;
                     if (root->child != NULL){
                         root = root->child;
@@ -196,7 +283,7 @@ void generate_code(ast* root, FILE *file){
                 }
             }
             else if (!root->visited){
-                while (root->token.type != INT_LITERAL){
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
                     root->visited = true;
                     if (root->child != NULL){
                         root = root->child;
@@ -282,7 +369,7 @@ void generate_code(ast* root, FILE *file){
                 }
             }
             else if (!root->visited){
-                while (root->token.type != INT_LITERAL){
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
                     root->visited = true;
                     if (root->child != NULL){
                         root = root->child;
@@ -358,7 +445,7 @@ void generate_code(ast* root, FILE *file){
                 }
             }
             else if (!root->visited){
-                while (root->token.type != INT_LITERAL){
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
                     root->visited = true;
                     if (root->child != NULL){
                         root = root->child;
@@ -421,7 +508,7 @@ void generate_code(ast* root, FILE *file){
                 }
             }
             else if (!root->visited){
-                while (root->token.type != INT_LITERAL){
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
                     root->visited = true;
                     if (root->child != NULL){
                         root = root->child;
@@ -463,13 +550,171 @@ void generate_code(ast* root, FILE *file){
             }
             break;
 
+        case LOGICAL_OR_EXPRESSION:
+            if (root->visited & root->past_sibling == NULL){
+                root->visited = true;
+                if (root->sibling != NULL){
+                    generate_code(root->sibling->sibling, file);
+                }
+                else{
+                    generate_code(root->root, file);
+                }
+            }
+            else if (!root->visited){
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
+                    root->visited = true;
+                    if (root->child != NULL){
+                        root = root->child;
+                    }
+                    else{
+                        root = root->sibling;
+                    }
+                }
+                generate_code(root, file);
+            }
+            else{
+                root->visited = true;
+                generate_code(root->past_sibling, file);
+            }
+            break;
+
         case EXPRESSION:
-            if (root->root->token.type == FACTOR){
+            if (root->root->token.type == FACTOR | root->past_sibling == NULL | (root->past_sibling != NULL && root->past_sibling->past_sibling == NULL)){
                 generate_code(root->root, file);
             }
-            break;        
+            else{
+                name = root->past_sibling->past_sibling->token.name;
+                if (is_in_local_variable_map(name)){
+                    fputs("    pop \%rax\n", file);
+                    fputs("    pushq \%rax\n", file);
+                    fputs("    mov \%rax, ", file);
+                    sprintf(number_string, "%d", get_local_variable_index(name));
+                    fputs(number_string, file);
+                    fputs("(\%rbp)\n", file);
+                    generate_code(root->root, file);
+                }
+                else if (root->past_sibling != NULL && root->past_sibling->past_sibling != NULL && root->past_sibling->past_sibling->past_sibling != NULL && root->past_sibling->past_sibling->past_sibling->token.type == INT_KEYWORD){
+                    generate_code(root->root, file);
+                }
+                else{
+                    printf("%s", "Variable not declared");
+                }
+            }
+            break;   
+        
+        case STATEMENT:
+            if (root->visited){
+                if (root->child->token.type == RETURN_KEYWORD){
+                    function_returned = true;
+                    fputs("    pop \%rax\n", file);
+                    fputs("    mov \%rbp, \%rsp\n", file);
+                    fputs("    pop \%rbp\n", file);
+                    fputs("    ret\n", file);
+                    generate_code(root->root, file);
+                }
+                else if (root->child->token.type == INT_KEYWORD){
+                    str variable_name = root->child->sibling->token.name;
+                    if (!is_in_local_variable_map(variable_name)){
+                        add_to_local_variable_map(variable_name);
+                        if (root->child->sibling->sibling->token.type == ASSIGNMENT){
+                            fputs("    pop \%rax\n", file);
+                            fputs("    mov \%rax, ", file);
+                            sprintf(number_string, "%d", get_local_variable_index(variable_name));
+                            fputs(number_string, file);
+                            fputs("(\%rbp)\n", file);
+                        }
+                        else{
+                            fputs("    mov $0, \%rax\n", file);
+                            fputs("    mov \%rax, ", file);
+                            sprintf(number_string, "%d", get_local_variable_index(variable_name));
+                            fputs(number_string, file);
+                            fputs("(\%rbp)\n", file);
+                        }
+                    }
+                    else{
+                        printf("%s", "Variable already declared");
+                        break;
+                    }
+                }
+                else{
+                    fputs("    pop \%rax\n", file);
+                }
+                if (root->sibling != NULL){
+                    generate_code(root->sibling, file);
+                }
+                else{
+                    generate_code(root->root, file);
+                }
+            }
+            else{
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
+                    root->visited = true;
+                    if (root->child != NULL){
+                        root = root->child;
+                    }
+                    else{
+                        root = root->sibling;
+                    }
+                }
+                generate_code(root, file);
+            }
+            break;
+
+        case FUNCTION:
+            if (!root->visited){
+                root->visited = true;
+                function_returned = false;
+                fputs("    .globl ", file);
+                root = root->child->sibling;
+                str name = root->token.name;
+                str temp = name;
+                while (name.pointer != NULL){
+                    fputc(name.character, file);
+                    name = *name.pointer;
+                }
+                fputc(name.character, file);
+                fputs("\n", file);
+
+                name = temp;
+                while (name.pointer != NULL){
+                    fputc(name.character, file);
+                    name = *name.pointer;
+                }
+                fputc(name.character, file);
+                fputs(":\n", file);
+                fputs("    pushq \%rbp\n", file);
+                fputs("    mov \%rsp, \%rbp\n", file);
+                fputs("    sub $", file);
+                sprintf(number_string, "%d", local_variable_byte_count);
+                fputs(number_string, file);
+                fputs(", \%rsp\n", file);
+                root = root->sibling;
+                root = root->sibling;
+                root = root->sibling;
+                root = root->sibling;
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
+                    root->visited = true;
+                    if (root->child != NULL){
+                        root = root->child;
+                    }
+                    else{
+                        root = root->sibling;
+                    }
+                }
+                generate_code(root, file);
+                break;   
+            }
+            else if (!function_returned){
+                fputs("    mov \%rbp, \%rsp\n", file);
+                fputs("    pop \%rbp\n", file);
+                fputs("    mov $0, \%rax\n", file);
+                fputs("    ret\n", file);
+            }
+            if (root->sibling != NULL){
+                generate_code(root->sibling, file);
+            }
+            break;
     }
-    
 }
 
 
@@ -492,48 +737,8 @@ int main(){
         printf("%s", "Syntax valid");
         FILE *file;
         file = fopen("assembly.s", "w");
-        fputs("    .globl ", file);
-        while (root->child!=NULL){
-            root = root->child;
-        }
-        root = root->sibling;
-        if (root->token.type == IDENTIFIER){
-            str name = root->token.name;
-            str temp = name;
-            while (name.pointer != NULL){
-                fputc(name.character, file);
-                name = *name.pointer;
-            }
-            fputc(name.character, file);
-            fputs("\n", file);
-
-            name = temp;
-            while (name.pointer != NULL){
-                fputc(name.character, file);
-                name = *name.pointer;
-            }
-            fputc(name.character, file);
-            fputs(":\n", file);
-            root = root->sibling;
-            root = root->sibling;
-            root = root->sibling;
-            root = root->sibling;
-            root = root->child;
-            root = root->sibling;
-            while (root->token.type != INT_LITERAL){
-                root->visited = true;
-                if (root->child != NULL){
-                    root = root->child;
-                }
-                else{
-                    root = root->sibling;
-                }
-            }
-            generate_code(root, file);
-            fclose(file);
-            file = fopen("assembly.s", "a");
-            fputs("    pop \%rax\n    ret\n", file);
-            fclose(file);
-        }
+        root = root->child;
+        generate_code(root, file);
+        fclose(file);
     }
 }

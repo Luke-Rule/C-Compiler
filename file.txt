@@ -1,3 +1,8 @@
 int main() {
-    return 0>-4&&4==3||6<=7&&(6==8||6==6&&9>!2);
+    int th;
+    th = 6;
+    int y = 7;
+    int x = 1;
+    int z = (y<th);
+    return z&&x;
 }

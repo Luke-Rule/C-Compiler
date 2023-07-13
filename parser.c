@@ -16,6 +16,7 @@ typedef enum non_terminal{
     FUNCTION_SYMBOL, 
     STATEMENT_SYMBOL,
     EXPRESSION_SYMBOL,
+    LOGICAL_OR_EXPRESSION_SYMBOL,
     LOGICAL_AND_EXPRESSION_SYMBOL,
     EQUALITY_EXPRESSION_SYMBOL,
     RELATIONAL_EXPRESSION_SYMBOL,
@@ -52,6 +53,9 @@ ast* initialise_sibling(ast *node, tkn token){
     return node->sibling;
 }
 
+int local_variable_byte_count = 0;
+int local_variable_count = 0;
+
 parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
     ast *node;
     node = (ast *)malloc(sizeof(ast));
@@ -59,6 +63,8 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
     function.type = FUNCTION;
     tkn expression;
     expression.type = EXPRESSION;
+    tkn logical_or_expression;
+    logical_or_expression.type = LOGICAL_OR_EXPRESSION;
     tkn logical_and_expression;
     logical_and_expression.type = LOGICAL_AND_EXPRESSION;
     tkn equality_expression;
@@ -74,7 +80,9 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
     tkn term;
     term.type = TERM;
     parse_return return_value;
+    parse_return statement_return;
     parse_return expression_return;
+    parse_return logical_or_expression_return;
     parse_return logical_and_expression_return;
     parse_return equality_expression_return;
     parse_return relational_expression_return;
@@ -115,19 +123,26 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                             if (token_list->token.type == OPEN_BRACE){
                                 node = initialise_sibling(node, token_list->token);
                                 token_list = token_list->pointer;
-                                node = initialise_sibling(node, statement);
-                                return_value = parse(token_list, STATEMENT_SYMBOL, node);
-                                if (return_value.valid){
-                                    token_list = return_value.token_list;
-                                    if (token_list->token.type == CLOSED_BRACE){
-                                        initialise_sibling(node, token_list->token);
-                                        token_list = token_list->pointer;
+                                 while (token_list->token.type != CLOSED_BRACE) {
+                                    node = initialise_sibling(node, statement);
+                                    statement_return = parse(token_list, STATEMENT_SYMBOL, node);
+                                    if (statement_return.valid){
+                                        token_list = statement_return.token_list;
+                                    }
+                                    else{
+                                        token_list = token_list;
                                         return_value.token_list = token_list;
-                                        return_value.valid = true;
+                                        return_value.valid = false;
                                         return return_value;
                                         break;
                                     }
                                 }
+                                initialise_sibling(node, token_list->token);
+                                token_list = token_list->pointer;
+                                return_value.token_list = token_list;
+                                return_value.valid = true;
+                                return return_value;
+                                break;
                             }
                         }
                     }   
@@ -156,12 +171,103 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                     }
                 }
             }
+            else if (token_list->token.type == INT_KEYWORD){
+                local_variable_byte_count += 8;
+                local_variable_count += 1;
+                node = initialise_child(root, token_list->token);
+                token_list = token_list->pointer;
+                if (token_list->token.type == IDENTIFIER){
+                    node = initialise_sibling(node, token_list->token);
+                    token_list = token_list->pointer;
+                    if (token_list->token.type == ASSIGNMENT){
+                        node = initialise_sibling(node, token_list->token);
+                        token_list = token_list->pointer;
+                        node = initialise_sibling(node, expression);
+                        expression_return = parse(token_list, EXPRESSION_SYMBOL, node);
+                        if (expression_return.valid){
+                            token_list = expression_return.token_list;
+                        }
+                        else{
+                            return_value.token_list = token_list;
+                            return_value.valid = false;
+                            return return_value;
+                            break;
+                        }
+                    }
+                    if (token_list->token.type == SEMICOLON){
+                        initialise_sibling(node, token_list->token);
+                        token_list = token_list->pointer;
+                        return_value.token_list = token_list;
+                        return_value.valid = true;
+                        return return_value;
+                        break;
+                    }
+                }
+                return_value.token_list = token_list;
+                return_value.valid = false;
+                return return_value;
+                break;
+            }
+            else{
+                node = initialise_child(root, expression);
+                expression_return = parse(token_list, EXPRESSION_SYMBOL, node);
+                if (expression_return.valid){
+                    token_list = expression_return.token_list;
+                    if (token_list->token.type == SEMICOLON){
+                        initialise_sibling(node, token_list->token);
+                        token_list = token_list->pointer;
+                        return_value.token_list = token_list;
+                        return_value.valid = true;
+                        return return_value;
+                        break;
+                    }
+                }
+            }
             return_value.token_list = token_list;
             return_value.valid = false;
             return return_value;
             break;
 
         case EXPRESSION_SYMBOL:
+        
+            if (token_list->pointer != NULL && token_list->pointer->token.type == ASSIGNMENT){
+                if (token_list->token.type == IDENTIFIER){
+                    node = initialise_child(root, token_list->token);
+                    token_list = token_list->pointer;
+                    if (token_list->token.type == ASSIGNMENT){
+                        node = initialise_sibling(node, token_list->token);
+                        token_list = token_list->pointer;
+                        node = initialise_sibling(node, expression);
+                        expression_return = parse(token_list, EXPRESSION_SYMBOL, node);
+                        if (expression_return.valid){
+                            token_list = expression_return.token_list;
+                            return_value.token_list = token_list;
+                            return_value.valid = true;
+                            return return_value;
+                            break;
+                        }
+                    }
+                }
+                return_value.token_list = token_list;
+                return_value.valid = false;
+                return return_value;
+                break;
+            }
+            node = initialise_child(root, logical_or_expression);
+            logical_or_expression_return = parse(token_list, LOGICAL_OR_EXPRESSION_SYMBOL, node);
+            if (logical_or_expression_return.valid){
+                token_list = logical_or_expression_return.token_list;
+                return_value.token_list = token_list;
+                return_value.valid = true;
+                return return_value;
+                break;
+            }
+            return_value.token_list = token_list;
+            return_value.valid = false;
+            return return_value;
+            break;        
+
+        case LOGICAL_OR_EXPRESSION_SYMBOL:
             node = initialise_child(root, logical_and_expression);
             logical_and_expression_return = parse(token_list, LOGICAL_AND_EXPRESSION_SYMBOL, node);
             if (logical_and_expression_return.valid){
@@ -371,13 +477,21 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                     }
                 }
             }
-            if (token_list->token.type == NEGATION | token_list->token.type == LOGICAL_NEGATION | token_list->token.type == BITWISE_COMPLEMENT){
+            else if (token_list->token.type == NEGATION | token_list->token.type == LOGICAL_NEGATION | token_list->token.type == BITWISE_COMPLEMENT){
                 node = initialise_child(root, token_list->token);
                 token_list = token_list->pointer;
                 node = initialise_sibling(node, factor);
                 return parse(token_list, FACTOR_SYMBOL, node);
             }
-            if (token_list->token.type == INT_LITERAL){
+            else if (token_list->token.type == INT_LITERAL){
+                node = initialise_child(root, token_list->token);
+                token_list = token_list->pointer;
+                return_value.token_list = token_list;
+                return_value.valid = true;
+                return return_value;
+                break;
+            }
+            else if (token_list->token.type == IDENTIFIER){
                 node = initialise_child(root, token_list->token);
                 token_list = token_list->pointer;
                 return_value.token_list = token_list;

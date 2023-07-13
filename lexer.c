@@ -33,6 +33,7 @@ typedef enum token_type{
     LESS_THAN_OR_EQUAL,
     GREATER_THAN,
     GREATER_THAN_OR_EQUAL,
+    ASSIGNMENT,
 
     INVALID,
 
@@ -40,6 +41,7 @@ typedef enum token_type{
     FUNCTION,
     STATEMENT,
     EXPRESSION,
+    LOGICAL_OR_EXPRESSION,
     LOGICAL_AND_EXPRESSION,
     EQUALITY_EXPRESSION,
     RELATIONAL_EXPRESSION,
@@ -121,8 +123,8 @@ bool is_ending_token_exc_comparators(char character){
 }
 
 bool is_ending_token_for_comparators(char character){
-    char valid_chars[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','_','1','2','3','4','5','6','7','8','9','0', '(', ')', '{', '}', ';', '-', '~', '+', '/', '*'};
-    for (int i = 0; i<26*2+11+10; i++){
+    char valid_chars[] = {' ', 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','_','1','2','3','4','5','6','7','8','9','0', '(', ')', '{', '}', ';', '-', '~', '+', '/', '*'};
+    for (int i = 0; i<26*2+11+11; i++){
         if (character==valid_chars[i]){
             return true;
         }
@@ -314,6 +316,9 @@ tkn_type typify_token(tkn *token, tkn *previous){
         case '=':
             if (name.pointer != NULL && name.pointer->character == '=' && name.pointer->pointer == NULL){
                 return EQUAL;
+            }
+            if (name.pointer == NULL){
+                return ASSIGNMENT;
             }
             return INVALID;
             break;

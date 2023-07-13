@@ -1,27 +1,39 @@
     .globl main
 main:
+    pushq %rbp
+    mov %rsp, %rbp
+    sub $32, %rsp
     mov $0, %rax
-    pushq %rax
-    mov $4, %rax
+    mov %rax, -8(%rbp)
+    mov $6, %rax
     pushq %rax
     pop %rax
-    neg %rax
+    pushq %rax
+    mov %rax, -8(%rbp)
+    pop %rax
+    mov $7, %rax
+    pushq %rax
+    pop %rax
+    mov %rax, -16(%rbp)
+    mov $1, %rax
+    pushq %rax
+    pop %rax
+    mov %rax, -24(%rbp)
+    mov -16(%rbp), %rax
+    pushq %rax
+    mov -8(%rbp), %rax
     pushq %rax
     pop %rcx
     pop %rax
     cmp %rcx, %rax
     mov $0, %rax
-    setg %al
+    setl %al
     pushq %rax
-    mov $4, %rax
-    pushq %rax
-    mov $3, %rax
-    pushq %rax
-    pop %rcx
     pop %rax
-    cmp %rax, %rcx
-    mov $0, %rax
-    sete %al
+    mov %rax, -32(%rbp)
+    mov -32(%rbp), %rax
+    pushq %rax
+    mov -24(%rbp), %rax
     pushq %rax
     pop %rcx
     pop %rax
@@ -31,82 +43,7 @@ main:
     pop %rax
     pushq %rcx
 _skip_and_1:
-    mov $6, %rax
-    pushq %rax
-    mov $7, %rax
-    pushq %rax
-    pop %rcx
     pop %rax
-    cmp %rcx, %rax
-    mov $0, %rax
-    setle %al
-    pushq %rax
-    mov $6, %rax
-    pushq %rax
-    mov $8, %rax
-    pushq %rax
-    pop %rcx
-    pop %rax
-    cmp %rax, %rcx
-    mov $0, %rax
-    sete %al
-    pushq %rax
-    mov $6, %rax
-    pushq %rax
-    mov $6, %rax
-    pushq %rax
-    pop %rcx
-    pop %rax
-    cmp %rax, %rcx
-    mov $0, %rax
-    sete %al
-    pushq %rax
-    mov $9, %rax
-    pushq %rax
-    mov $2, %rax
-    pushq %rax
-    pop %rax
-    cmp $0, %rax
-    mov $0, %rax
-    sete %al
-    pushq %rax
-    pop %rcx
-    pop %rax
-    cmp %rcx, %rax
-    mov $0, %rax
-    setg %al
-    pushq %rax
-    pop %rcx
-    pop %rax
-    cmp $0, %rax
-    pushq %rax
-    je _skip_and_2
-    pop %rax
-    pushq %rcx
-_skip_and_2:
-    pop %rcx
-    pop %rax
-    cmp $1, %rax
-    pushq %rax
-    je _skip_or_1
-    pop %rax
-    pushq %rcx
-_skip_or_1:
-    pop %rcx
-    pop %rax
-    cmp $0, %rax
-    pushq %rax
-    je _skip_and_3
-    pop %rax
-    pushq %rcx
-_skip_and_3:
-    pop %rcx
-    pop %rax
-    cmp $1, %rax
-    pushq %rax
-    je _skip_or_2
-    pop %rax
-    pushq %rcx
-_skip_or_2:
-    pop %rax
+    mov %rbp, %rsp
+    pop %rbp
     ret

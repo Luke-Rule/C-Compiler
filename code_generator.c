@@ -395,16 +395,6 @@ void generate_code(ast* root, FILE *file){
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file);
             }
-            else if (root->root->sibling != NULL & root->root->past_sibling != NULL){
-                fputs("    pop \%rax\n", file);
-                fputs("    pushq \%rax\n", file);
-                fputs("    cmp $0, \%rax\n", file);
-                fputs("    je _skip_and_", file);
-                sprintf(number_string, "%d", and_jump_count+1);
-                fputs(number_string, file);
-                fputs("\n", file);
-                generate_code(root->sibling->sibling->sibling, file);
-            }
             else{
                 generate_code(root->root, file);
             }
@@ -419,16 +409,6 @@ void generate_code(ast* root, FILE *file){
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file);
             }
-            else if (root->root->sibling != NULL & root->root->past_sibling != NULL){
-                fputs("    pop \%rax\n", file);
-                fputs("    pushq \%rax\n", file);
-                fputs("    cmp $1, \%rax\n", file);
-                fputs("    je _skip_and_", file);
-                sprintf(number_string, "%d", and_jump_count+1);
-                fputs(number_string, file);
-                fputs("\n", file);
-                generate_code(root->root, file);
-            }
             else{
                 generate_code(root->root, file);
             }
@@ -438,6 +418,13 @@ void generate_code(ast* root, FILE *file){
             if (root->visited & root->past_sibling == NULL){
                 root->visited = true;
                 if (root->sibling != NULL){
+                    fputs("    pop \%rax\n", file);
+                    fputs("    pushq \%rax\n", file);
+                    fputs("    cmp $0, \%rax\n", file);
+                    fputs("    je _skip_and_", file);
+                    sprintf(number_string, "%d", and_jump_count+1);
+                    fputs(number_string, file);
+                    fputs("\n", file);
                     generate_code(root->sibling->sibling, file);
                 }
                 else{
@@ -464,33 +451,17 @@ void generate_code(ast* root, FILE *file){
 
         case AND:
             root->visited = true;
-            and_jump_count++;
-            sprintf(number_string, "%d", and_jump_count);
             fputs("    pop \%rcx\n", file);
-            fputs("    pop \%rax\n", file);
-            fputs("    cmp $0, \%rax\n", file);
-            fputs("    pushq \%rax\n", file);
-            fputs("    je _skip_and_", file);
-            fputs(number_string, file);
-            fputs("\n", file);
             fputs("    pop \%rax\n", file);
             fputs("    pushq \%rcx\n", file);
             
             fputs("_skip_and_", file);
+            and_jump_count++;
+            sprintf(number_string, "%d", and_jump_count);
             fputs(number_string, file);
             fputs(":\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling, file);
-            }
-            else if (root->root->sibling != NULL & root->root->past_sibling != NULL){
-                fputs("    pop \%rax\n", file);
-                fputs("    pushq \%rax\n", file);
-                fputs("    cmp $0, \%rax\n", file);
-                fputs("    je _skip_or_", file);
-                sprintf(number_string, "%d", or_jump_count+1);
-                fputs(number_string, file);
-                fputs("\n", file);
-                generate_code(root->root, file);
             }
             else{
                 generate_code(root->root, file);
@@ -501,6 +472,13 @@ void generate_code(ast* root, FILE *file){
             if (root->visited & root->past_sibling == NULL){
                 root->visited = true;
                 if (root->sibling != NULL){
+                    fputs("    pop \%rax\n", file);
+                    fputs("    pushq \%rax\n", file);
+                    fputs("    cmp $1, \%rax\n", file);
+                    fputs("    je _skip_or_", file);
+                    sprintf(number_string, "%d", or_jump_count+1);
+                    fputs(number_string, file);
+                    fputs("\n", file);
                     generate_code(root->sibling->sibling, file);
                 }
                 else{
@@ -532,13 +510,8 @@ void generate_code(ast* root, FILE *file){
 
             fputs("    pop \%rcx\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    cmp $1, \%rax\n", file);
-            fputs("    pushq \%rax\n", file);
-            fputs("    je _skip_or_", file);
-            fputs(number_string, file);
-            fputs("\n", file);
-            fputs("    pop \%rax\n", file);
             fputs("    pushq \%rcx\n", file);
+
             fputs("_skip_or_", file);
             fputs(number_string, file);
             fputs(":\n", file);
@@ -639,7 +612,7 @@ void generate_code(ast* root, FILE *file){
                 else{
                     fputs("    pop \%rax\n", file);
                 }
-                if (root->sibling != NULL){
+                if (root->sibling->token.type != CLOSED_BRACE){
                     generate_code(root->sibling, file);
                 }
                 else{
@@ -702,7 +675,7 @@ void generate_code(ast* root, FILE *file){
                     }
                 }
                 generate_code(root, file);
-                break;   
+                break;
             }
             else if (!function_returned){
                 fputs("    mov \%rbp, \%rsp\n", file);

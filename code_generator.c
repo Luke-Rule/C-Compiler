@@ -5,8 +5,10 @@
 
 //gcc assembly.s -o executable_name
 //echo %errorlevel%
-int and_jump_count = 0;
-int or_jump_count = 0;
+int and_jumper_count = 0;
+int or_jumper_count = 0;
+int and_jumpee_count = 0;
+int or_jumpee_count = 0;
 char number_string[10000];
 
 typedef struct local_variable{
@@ -422,7 +424,8 @@ void generate_code(ast* root, FILE *file){
                     fputs("    pushq \%rax\n", file);
                     fputs("    cmp $0, \%rax\n", file);
                     fputs("    je _skip_and_", file);
-                    sprintf(number_string, "%d", and_jump_count+1);
+                    and_jumper_count++;
+                    sprintf(number_string, "%d", and_jumpee_count - and_jumper_count + 1);
                     fputs(number_string, file);
                     fputs("\n", file);
                     generate_code(root->sibling->sibling, file);
@@ -456,8 +459,8 @@ void generate_code(ast* root, FILE *file){
             fputs("    pushq \%rcx\n", file);
             
             fputs("_skip_and_", file);
-            and_jump_count++;
-            sprintf(number_string, "%d", and_jump_count);
+            and_jumpee_count++;
+            sprintf(number_string, "%d", and_jumpee_count);
             fputs(number_string, file);
             fputs(":\n", file);
             if (root->sibling->sibling != NULL){
@@ -476,7 +479,8 @@ void generate_code(ast* root, FILE *file){
                     fputs("    pushq \%rax\n", file);
                     fputs("    cmp $1, \%rax\n", file);
                     fputs("    je _skip_or_", file);
-                    sprintf(number_string, "%d", or_jump_count+1);
+                    or_jumper_count++;
+                    sprintf(number_string, "%d", or_jumper_count);
                     fputs(number_string, file);
                     fputs("\n", file);
                     generate_code(root->sibling->sibling, file);
@@ -505,14 +509,14 @@ void generate_code(ast* root, FILE *file){
 
         case OR:
             root->visited = true;
-            or_jump_count++;
-            sprintf(number_string, "%d", or_jump_count);
 
             fputs("    pop \%rcx\n", file);
             fputs("    pop \%rax\n", file);
             fputs("    pushq \%rcx\n", file);
 
             fputs("_skip_or_", file);
+            or_jumpee_count++;
+            sprintf(number_string, "%d", or_jumper_count - or_jumpee_count + 1);
             fputs(number_string, file);
             fputs(":\n", file);
             if (root->sibling->sibling != NULL){

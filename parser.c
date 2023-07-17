@@ -55,6 +55,8 @@ ast* initialise_sibling(ast *node, tkn token){
 
 int local_variable_byte_count = 0;
 int local_variable_count = 0;
+int and_total_count = 0;
+int or_total_count = 0;
 
 parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
     ast *node;
@@ -266,28 +268,27 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             return_value.valid = false;
             return return_value;
             break;        
-
+        
         case LOGICAL_OR_EXPRESSION_SYMBOL:
             node = initialise_child(root, logical_and_expression);
             logical_and_expression_return = parse(token_list, LOGICAL_AND_EXPRESSION_SYMBOL, node);
             if (logical_and_expression_return.valid){
                 token_list = logical_and_expression_return.token_list;
-                if (token_list->token.type == OR){
+                while (token_list->token.type == OR) {
+                    or_total_count++;
                     node = initialise_sibling(node, token_list->token);
                     token_list = token_list->pointer;
                     node = initialise_sibling(node, logical_and_expression);
                     logical_and_expression_return = parse(token_list, LOGICAL_AND_EXPRESSION_SYMBOL, node);
                     if (logical_and_expression_return.valid){
-                        token_list = logical_and_expression_return.token_list;  
+                        token_list = logical_and_expression_return.token_list;
+                    }
+                    else{
                         return_value.token_list = token_list;
-                        return_value.valid = true;
+                        return_value.valid = false;
                         return return_value;
                         break;
                     }
-                    return_value.token_list = token_list;
-                    return_value.valid = false;
-                    return return_value;
-                    break;
                 }
                 return_value.token_list = token_list;
                 return_value.valid = true;
@@ -304,22 +305,21 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             equality_expression_return = parse(token_list, EQUALITY_EXPRESSION_SYMBOL, node);
             if (equality_expression_return.valid){
                 token_list = equality_expression_return.token_list;
-                if (token_list->token.type == AND){
+                while (token_list->token.type == AND) {
+                    and_total_count++;
                     node = initialise_sibling(node, token_list->token);
                     token_list = token_list->pointer;
                     node = initialise_sibling(node, equality_expression);
                     equality_expression_return = parse(token_list, EQUALITY_EXPRESSION_SYMBOL, node);
                     if (equality_expression_return.valid){
-                        token_list = equality_expression_return.token_list;  
+                        token_list = equality_expression_return.token_list;
+                    }
+                    else{
                         return_value.token_list = token_list;
-                        return_value.valid = true;
+                        return_value.valid = false;
                         return return_value;
                         break;
                     }
-                    return_value.token_list = token_list;
-                    return_value.valid = false;
-                    return return_value;
-                    break;
                 }
                 return_value.token_list = token_list;
                 return_value.valid = true;
@@ -336,22 +336,20 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             relational_expression_return = parse(token_list, RELATIONAL_EXPRESSION_SYMBOL, node);
             if (relational_expression_return.valid){
                 token_list = relational_expression_return.token_list;
-                if (token_list->token.type == EQUAL | token_list->token.type == NOT_EQUAL){
+                while (token_list->token.type == NOT_EQUAL | token_list->token.type == EQUAL) {
                     node = initialise_sibling(node, token_list->token);
                     token_list = token_list->pointer;
                     node = initialise_sibling(node, relational_expression);
                     relational_expression_return = parse(token_list, RELATIONAL_EXPRESSION_SYMBOL, node);
                     if (relational_expression_return.valid){
-                        token_list = relational_expression_return.token_list;  
+                        token_list = relational_expression_return.token_list;
+                    }
+                    else{
                         return_value.token_list = token_list;
-                        return_value.valid = true;
+                        return_value.valid = false;
                         return return_value;
                         break;
                     }
-                    return_value.token_list = token_list;
-                    return_value.valid = false;
-                    return return_value;
-                    break;
                 }
                 return_value.token_list = token_list;
                 return_value.valid = true;
@@ -368,22 +366,20 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             additive_expression_return = parse(token_list, ADDITIVE_EXPRESSION_SYMBOL, node);
             if (additive_expression_return.valid){
                 token_list = additive_expression_return.token_list;
-                if (token_list->token.type == LESS_THAN | token_list->token.type == LESS_THAN_OR_EQUAL | token_list->token.type == GREATER_THAN | token_list->token.type == GREATER_THAN_OR_EQUAL){
+                while (token_list->token.type == LESS_THAN | token_list->token.type == LESS_THAN_OR_EQUAL | token_list->token.type == GREATER_THAN | token_list->token.type == GREATER_THAN_OR_EQUAL) {
                     node = initialise_sibling(node, token_list->token);
                     token_list = token_list->pointer;
                     node = initialise_sibling(node, additive_expression);
                     additive_expression_return = parse(token_list, ADDITIVE_EXPRESSION_SYMBOL, node);
                     if (additive_expression_return.valid){
-                        token_list = additive_expression_return.token_list;  
+                        token_list = additive_expression_return.token_list;
+                    }
+                    else{
                         return_value.token_list = token_list;
-                        return_value.valid = true;
+                        return_value.valid = false;
                         return return_value;
                         break;
                     }
-                    return_value.token_list = token_list;
-                    return_value.valid = false;
-                    return return_value;
-                    break;
                 }
                 return_value.token_list = token_list;
                 return_value.valid = true;
@@ -400,22 +396,20 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             term_return = parse(token_list, TERM_SYMBOL, node);
             if (term_return.valid){
                 token_list = term_return.token_list;
-                if (token_list->token.type == ADDITION | token_list->token.type == SUBTRACTION){
+                while (token_list->token.type == ADDITION | token_list->token.type == SUBTRACTION) {
                     node = initialise_sibling(node, token_list->token);
                     token_list = token_list->pointer;
                     node = initialise_sibling(node, term);
                     term_return = parse(token_list, TERM_SYMBOL, node);
                     if (term_return.valid){
-                        token_list = term_return.token_list;  
+                        token_list = term_return.token_list;
+                    }
+                    else{
                         return_value.token_list = token_list;
-                        return_value.valid = true;
+                        return_value.valid = false;
                         return return_value;
                         break;
                     }
-                    return_value.token_list = token_list;
-                    return_value.valid = false;
-                    return return_value;
-                    break;
                 }
                 return_value.token_list = token_list;
                 return_value.valid = true;
@@ -432,22 +426,20 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             factor_return = parse(token_list, FACTOR_SYMBOL, node);
             if (factor_return.valid){
                 token_list = factor_return.token_list;
-                if (token_list->token.type == MULTIPLICATION | token_list->token.type == DIVISION){
+                while (token_list->token.type == MULTIPLICATION | token_list->token.type == DIVISION) {
                     node = initialise_sibling(node, token_list->token);
                     token_list = token_list->pointer;
                     node = initialise_sibling(node, factor);
                     factor_return = parse(token_list, FACTOR_SYMBOL, node);
                     if (factor_return.valid){
                         token_list = factor_return.token_list;
-                        return_value.token_list = token_list;  
-                        return_value.valid = true;
+                    }
+                    else{
+                        return_value.token_list = token_list;
+                        return_value.valid = false;
                         return return_value;
                         break;
                     }
-                    return_value.token_list = token_list;
-                    return_value.valid = false;
-                    return return_value;
-                    break;
                 }
                 return_value.token_list = token_list;
                 return_value.valid = true;

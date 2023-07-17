@@ -417,7 +417,7 @@ void generate_code(ast* root, FILE *file){
             break;
 
         case EQUALITY_EXPRESSION:
-            if (root->visited & root->past_sibling == NULL){
+            if (root->visited & (root->past_sibling == NULL || root->past_sibling->visited)){
                 root->visited = true;
                 if (root->sibling != NULL){
                     fputs("    pop \%rax\n", file);
@@ -425,7 +425,7 @@ void generate_code(ast* root, FILE *file){
                     fputs("    cmp $0, \%rax\n", file);
                     fputs("    je _skip_and_", file);
                     and_jumper_count++;
-                    sprintf(number_string, "%d", and_jumpee_count - and_jumper_count + 1);
+                    sprintf(number_string, "%d", and_jumper_count);
                     fputs(number_string, file);
                     fputs("\n", file);
                     generate_code(root->sibling->sibling, file);
@@ -464,7 +464,7 @@ void generate_code(ast* root, FILE *file){
             fputs(number_string, file);
             fputs(":\n", file);
             if (root->sibling->sibling != NULL){
-                generate_code(root->sibling->sibling, file);
+                generate_code(root->sibling, file);
             }
             else{
                 generate_code(root->root, file);
@@ -472,7 +472,7 @@ void generate_code(ast* root, FILE *file){
             break;
         
         case LOGICAL_AND_EXPRESSION:
-            if (root->visited & root->past_sibling == NULL){
+            if (root->visited & (root->past_sibling == NULL || root->past_sibling->visited)){
                 root->visited = true;
                 if (root->sibling != NULL){
                     fputs("    pop \%rax\n", file);
@@ -516,10 +516,10 @@ void generate_code(ast* root, FILE *file){
 
             fputs("_skip_or_", file);
             or_jumpee_count++;
-            sprintf(number_string, "%d", or_jumper_count - or_jumpee_count + 1);
+            sprintf(number_string, "%d", or_jumpee_count);
             fputs(number_string, file);
             fputs(":\n", file);
-            if (root->sibling->sibling != NULL){
+            if (root->sibling != NULL){
                 generate_code(root->sibling, file);
             }
             else{

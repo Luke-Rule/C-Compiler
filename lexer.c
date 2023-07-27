@@ -490,10 +490,47 @@ tkn_type typify_token(tkn *token, tkn *previous){
 tkn_list* typify_tokens(tkn_list *token_list){
     tkn_list *temp = token_list;
     tkn *token = &token_list->token;
+    int open = 0;
+    bool found = false;
     while (token_list->pointer != NULL){
         tkn *previous = token;
+        tkn_list *temp_list;
         token = &token_list->token;
         token->type = typify_token(token, previous);
+        if (open>0 && previous->type==ELSE_KEYWORD && token->type!=IF_KEYWORD && typify_token(&token_list->pointer->token, previous)!=IF_KEYWORD){
+            found = true;
+        }
+        if (token->type == CLOSED_BRACE && found){
+            found = false;
+            for (int i = 0; i<open;i++){
+                tkn_list* new_node = (tkn_list*)malloc(sizeof(tkn_list));
+                tkn new_token;
+                new_token.type = CLOSED_BRACE;
+                new_node->token = new_token;
+                str string;
+                string.character = '}';
+                string.pointer = NULL;
+                new_token.name = string;
+                new_node->pointer = token_list->pointer;
+                token_list->pointer = new_node;
+                token_list = token_list->pointer;
+            }
+            open = 0;
+        }
+        if (token->type == ELSE_KEYWORD && typify_token(&token_list->pointer->token, token)==IF_KEYWORD){
+            open++;
+            tkn_list* new_node = (tkn_list*)malloc(sizeof(tkn_list));
+            tkn new_token;
+            new_token.type = OPEN_BRACE;
+            str string;
+            string.character = '{';
+            string.pointer = NULL;
+            new_token.name = string;
+            new_node->token = new_token;
+            new_node->pointer = token_list->pointer;
+            token_list->pointer = new_node;
+        }
+        token = &token_list->token;
         token_list = token_list->pointer;
     }
     return temp;

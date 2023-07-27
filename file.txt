@@ -1,10 +1,16 @@
 int main() {
     int th = 3;
-    if (2) {
+    if (0) {
         th = 5;
     }
-    else{
+    else if (0){
         th = 4;
+    }
+    else if (1){
+        th = 4;
+    }
+    else{
+        th = 1;
     }
     return th;
 }

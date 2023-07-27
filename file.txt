@@ -1,5 +1,10 @@
 int main() {
-    int th;
-    if (0==0) th = 6; else th = 7;
+    int th = 3;
+    if (2) {
+        th = 5;
+    }
+    else{
+        th = 4;
+    }
     return th;
 }

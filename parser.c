@@ -302,6 +302,29 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                 return return_value;
                 break;
             }
+            else if (token_list->token.type == OPEN_BRACE){
+                node = initialise_child(root, token_list->token);
+                token_list = token_list->pointer;
+                while (token_list->token.type != CLOSED_BRACE){
+                    node = initialise_sibling(node, block_item);
+                    block_item_return = parse(token_list, BLOCK_ITEM_SYMBOL, node);
+                    if (block_item_return.valid){
+                        token_list = block_item_return.token_list;
+                    }
+                    else{
+                        return_value.token_list = token_list;
+                        return_value.valid = false;
+                        return return_value;
+                        break;
+                    }
+                }
+                initialise_sibling(node, token_list->token);
+                token_list = token_list->pointer;
+                return_value.token_list = token_list;
+                return_value.valid = true;
+                return return_value;
+                break;
+            }
             else{
                 node = initialise_child(root, expression);
                 expression_return = parse(token_list, EXPRESSION_SYMBOL, node);

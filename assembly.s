@@ -2,29 +2,35 @@
 main:
     pushq %rbp
     mov %rsp, %rbp
-    sub $0, %rsp
+    sub $8, %rsp
+    mov $0, %rax
+    mov %rax, -8(%rbp)
     mov $0, %rax
     pushq %rax
-    pop %rax
-    pushq %rax
-    cmp $1, %rax
-    je _skip_or_1
-    mov $1, %rax
-    pushq %rax
-    pop %rcx
-    pop %rax
-    pushq %rcx
-_skip_or_1:
-    pop %rax
-    pushq %rax
-    cmp $1, %rax
-    je _skip_or_2
     mov $0, %rax
     pushq %rax
     pop %rcx
     pop %rax
-    pushq %rcx
-_skip_or_2:
+    cmp %rax, %rcx
+    mov $0, %rax
+    sete %al
+    pushq %rax
+    pop %rax
+    cmp $0, %rax
+    je _else_1
+    mov $6, %rax
+    pushq %rax
+    pop %rax
+    mov %rax, -8(%rbp)
+    je _if_end_1
+_else_1:
+    mov $7, %rax
+    pushq %rax
+    pop %rax
+    mov %rax, -8(%rbp)
+_if_end_1:
+    mov -8(%rbp), %rax
+    pushq %rax
     pop %rax
     mov %rbp, %rsp
     pop %rbp

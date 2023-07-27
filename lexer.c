@@ -34,13 +34,20 @@ typedef enum token_type{
     GREATER_THAN,
     GREATER_THAN_OR_EQUAL,
     ASSIGNMENT,
+    IF_KEYWORD,
+    ELSE_KEYWORD,
+    COLON,
+    QUESTION_MARK,
 
     INVALID,
 
     PROGRAM,
     FUNCTION,
+    BLOCK_ITEM,
+    DECLARATION,
     STATEMENT,
     EXPRESSION,
+    CONDITIONAL_EXPRESSION,
     LOGICAL_OR_EXPRESSION,
     LOGICAL_AND_EXPRESSION,
     EQUALITY_EXPRESSION,
@@ -53,7 +60,6 @@ typedef enum token_type{
 
 typedef struct tkn{
     str name;
-    int value;
     enum token_type type;
 } tkn;
 
@@ -145,7 +151,6 @@ bool is_comparator(char character){
 tkn_return get_next_token(FILE *file_pointer){
     char character;
     char last_character;
-    bool first = false;
     bool end = false;
     str *token_string;
     token_string = (str *)malloc(sizeof(str));
@@ -160,9 +165,6 @@ tkn_return get_next_token(FILE *file_pointer){
     }
     while (character != EOF & character != ' ' & character != '\n' & !end){
         append_string(token_string, character);
-        if (!first & isdigit(character)){
-            first = true;
-        }
         last_character = character;
         character=fgetc(file_pointer);
         if (!is_comparator(last_character) & is_ending_token(character)){
@@ -181,9 +183,6 @@ tkn_return get_next_token(FILE *file_pointer){
     tkn token;
     if (token_string->pointer != NULL){
         token.name = *(token_string->pointer);
-    }
-    if (first){
-        token.value = get_int_value(token_string, 0);
     }
     tkn_return token_return;
     token_return.token = token;
@@ -243,6 +242,8 @@ tkn_type typify_token(tkn *token, tkn *previous){
     bool end = false;
     bool possible_return_keyword = false;
     bool possible_int_keyword = false;
+    bool possible_if_keyword = false;
+    bool possible_else_keyword = false;
     tkn_type type = INVALID;
     switch (name.character)
         {
@@ -264,6 +265,14 @@ tkn_type typify_token(tkn *token, tkn *previous){
         
         case ';':
             return SEMICOLON;
+            break;
+
+        case ':':
+            return COLON;
+            break;
+
+        case '?':
+            return QUESTION_MARK;
             break;
 
         case '-':
@@ -348,7 +357,18 @@ tkn_type typify_token(tkn *token, tkn *previous){
             break;
         
         case 'i':
-            possible_int_keyword = true;
+            if (name.pointer!=NULL){
+                if (name.pointer->character == 'f'){
+                    possible_if_keyword = true;
+                }
+                else{
+                    possible_int_keyword = true;
+                }
+            }
+            break;
+        
+        case 'e':
+            possible_else_keyword = true;
             break;
         
         default:
@@ -356,7 +376,23 @@ tkn_type typify_token(tkn *token, tkn *previous){
     }
 
     str *temp = &name;
-
+    if (possible_if_keyword){
+        if (name.pointer != NULL){
+            name = *name.pointer;
+            if (name.character != 'f'){
+                possible_if_keyword = false;
+            }
+        }
+        else{
+            possible_if_keyword = false;
+        }
+        if (possible_if_keyword & name.pointer!=NULL){
+            possible_if_keyword = false;
+        }
+        if (possible_if_keyword){
+            return IF_KEYWORD;
+        }
+    }
     if (possible_int_keyword){
         char int_keyword[] = {'n','t'};
         for (int i = 0; i<2; i++){
@@ -396,6 +432,26 @@ tkn_type typify_token(tkn *token, tkn *previous){
         }
         else if (possible_return_keyword){
             return RETURN_KEYWORD;
+        }
+    }
+    else if (possible_else_keyword){
+        char return_keyword[] = {'l','s','e'};
+        for (int i = 0; i<3; i++){
+            if (name.pointer != NULL){
+                name = *name.pointer;
+                if (name.character != return_keyword[i]){
+                    possible_else_keyword = false;
+                }
+            }
+            else{
+                possible_else_keyword = false;
+            }
+        }
+        if (possible_else_keyword & name.pointer!=NULL){
+            possible_else_keyword = false;
+        }
+        else if (possible_else_keyword){
+            return ELSE_KEYWORD;
         }
     }
 

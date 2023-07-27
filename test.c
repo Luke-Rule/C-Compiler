@@ -1,4 +1,3 @@
 int main() {
-    int d;
-    return d = 6;
+    return (1 ? 0 : 1);
 }

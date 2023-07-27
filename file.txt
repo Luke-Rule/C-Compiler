@@ -1,3 +1,5 @@
 int main() {
-    return (0||1||0);
+    int th;
+    if (0==0) th = 6; else th = 7;
+    return th;
 }

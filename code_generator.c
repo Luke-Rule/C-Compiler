@@ -9,6 +9,7 @@ int and_jumper_count = 0;
 int or_jumper_count = 0;
 int and_jumpee_count = 0;
 int or_jumpee_count = 0;
+int conditional_count = 0;
 char number_string[10000];
 
 typedef struct local_variable{
@@ -531,7 +532,7 @@ void generate_code(ast* root, FILE *file){
             if (root->visited & root->past_sibling == NULL){
                 root->visited = true;
                 if (root->sibling != NULL){
-                    generate_code(root->sibling->sibling, file);
+                    generate_code(root->sibling, file);
                 }
                 else{
                     generate_code(root->root, file);
@@ -554,42 +555,97 @@ void generate_code(ast* root, FILE *file){
                 generate_code(root->past_sibling, file);
             }
             break;
+        
+        case QUESTION_MARK:
+            fputs("    pop \%rax\n", file);
+            fputs("    cmp $0, \%rax\n", file);
+            fputs("    je _e3_", file);
+            conditional_count++;
+            sprintf(number_string, "%d", conditional_count);
+            fputs(number_string, file);
+            fputs("\n", file);
+            generate_code(root->sibling, file);
+            break;
+        
+        case CONDITIONAL_EXPRESSION:
+            if (root->visited & (root->past_sibling != NULL && root->past_sibling->token.type == COLON)){
+                fputs("_post_conditional_", file);
+                sprintf(number_string, "%d", conditional_count);
+                fputs(number_string, file);
+                fputs(":\n", file);
+                generate_code(root->root, file);
+                break;
+            }
+            else if (root->visited){
+                generate_code(root->root, file);
+            }
+            else{
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
+                    root->visited = true;
+                    if (root->child != NULL){
+                        root = root->child;
+                    }
+                    else{
+                        root = root->sibling;
+                    }
+                }
+                generate_code(root, file);
+            }
+            break;
 
         case EXPRESSION:
-            if (root->root->token.type == FACTOR | root->past_sibling == NULL | (root->past_sibling != NULL && root->past_sibling->past_sibling == NULL)){
+            if (!root->visited && root->sibling != NULL && root->sibling->token.type != COLON){
+                root->visited = true;
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
+                    root->visited = true;
+                    if (root->child != NULL){
+                        root = root->child;
+                    }
+                    else{
+                        root = root->sibling;
+                    }
+                }
+                generate_code(root, file);
+            }
+            else if (root->sibling != NULL && root->sibling->token.type == COLON){
+                fputs("    jmp _post_conditional_", file);
+                sprintf(number_string, "%d", conditional_count);
+                fputs(number_string, file);
+                fputs("\n", file);
+                fputs("_e3_", file);
+                sprintf(number_string, "%d", conditional_count);
+                fputs(number_string, file);
+                fputs(":\n", file);
+                generate_code(root->sibling->sibling, file);
+            }
+            else if (root->root->token.type == FACTOR | root->past_sibling == NULL | (root->past_sibling != NULL && root->past_sibling->past_sibling == NULL)){
                 generate_code(root->root, file);
             }
             else{
                 name = root->past_sibling->past_sibling->token.name;
                 if (is_in_local_variable_map(name)){
                     fputs("    pop \%rax\n", file);
-                    fputs("    pushq \%rax\n", file);
+                    if (root->past_sibling->past_sibling->past_sibling != NULL){
+                        fputs("    pushq \%rax\n", file);
+                    }
                     fputs("    mov \%rax, ", file);
                     sprintf(number_string, "%d", get_local_variable_index(name));
                     fputs(number_string, file);
                     fputs("(\%rbp)\n", file);
                     generate_code(root->root, file);
                 }
-                else if (root->past_sibling != NULL && root->past_sibling->past_sibling != NULL && root->past_sibling->past_sibling->past_sibling != NULL && root->past_sibling->past_sibling->past_sibling->token.type == INT_KEYWORD){
+                else if (root->past_sibling != NULL && root->past_sibling->past_sibling != NULL && (root->past_sibling->past_sibling->token.type == IF_KEYWORD | (root->past_sibling->past_sibling->past_sibling != NULL && root->past_sibling->past_sibling->past_sibling->token.type == INT_KEYWORD))){
                     generate_code(root->root, file);
                 }
                 else{
                     printf("%s", "Variable not declared");
                 }
             }
-            break;   
+            break; 
         
-        case STATEMENT:
+        case DECLARATION:
             if (root->visited){
-                if (root->child->token.type == RETURN_KEYWORD){
-                    function_returned = true;
-                    fputs("    pop \%rax\n", file);
-                    fputs("    mov \%rbp, \%rsp\n", file);
-                    fputs("    pop \%rbp\n", file);
-                    fputs("    ret\n", file);
-                    generate_code(root->root, file);
-                }
-                else if (root->child->token.type == INT_KEYWORD){
+                if (root->child->token.type == INT_KEYWORD){
                     str variable_name = root->child->sibling->token.name;
                     if (!is_in_local_variable_map(variable_name)){
                         add_to_local_variable_map(variable_name);
@@ -613,11 +669,64 @@ void generate_code(ast* root, FILE *file){
                         break;
                     }
                 }
-                else{
-                    fputs("    pop \%rax\n", file);
+                generate_code(root->root, file);
+            }
+            else{
+                while (root->token.type != INT_LITERAL & (root->token.type != IDENTIFIER | (root->sibling != NULL && root->sibling->token.type != SEMICOLON))){
+                    root->visited = true;
+                    if (root->child != NULL){
+                        root = root->child;
+                    }
+                    else{
+                        root = root->sibling;
+                    }
                 }
-                if (root->sibling->token.type != CLOSED_BRACE){
-                    generate_code(root->sibling, file);
+                generate_code(root, file);
+            }
+            break;
+        
+        case STATEMENT:
+            if (root->visited){
+                if (root->child->token.type == RETURN_KEYWORD){
+                    function_returned = true;
+                    fputs("    pop \%rax\n", file);
+                    fputs("    mov \%rbp, \%rsp\n", file);
+                    fputs("    pop \%rbp\n", file);
+                    fputs("    ret\n", file);
+                    generate_code(root->root, file);
+                }
+                else if (root->child->token.type == IF_KEYWORD && !root->child->sibling->sibling->sibling->sibling->visited){
+                    fputs("    pop \%rax\n", file);
+                    fputs("    cmp $0, \%rax\n", file);
+                    fputs("    je _else_", file);
+                    else_count++;
+                    sprintf(number_string, "%d", else_count);
+                    fputs(number_string, file);
+                    fputs("\n", file);
+                    generate_code(root->child->sibling->sibling->sibling->sibling, file);
+                }
+                else if (root->past_sibling != NULL && root->past_sibling->past_sibling->past_sibling->past_sibling->token.type == IF_KEYWORD){
+                    fputs("    je _if_end_", file);
+                    sprintf(number_string, "%d", else_count);
+                    fputs(number_string, file);
+                    fputs("\n", file);
+                    fputs("_else_", file);
+                    sprintf(number_string, "%d", else_count);
+                    fputs(number_string, file);
+                    fputs(":\n", file);
+                    if (root->sibling != NULL && root->sibling->token.type == ELSE_KEYWORD){
+                        generate_code(root->sibling->sibling, file);
+                    }
+                    else{
+                        generate_code(root->root, file);
+                    }
+                }
+                else if (root->past_sibling != NULL && root->past_sibling->token.type == ELSE_KEYWORD){
+                    fputs("_if_end_", file);
+                    sprintf(number_string, "%d", else_count);
+                    fputs(number_string, file);
+                    fputs(":\n", file);
+                    generate_code(root->root, file);
                 }
                 else{
                     generate_code(root->root, file);
@@ -636,7 +745,22 @@ void generate_code(ast* root, FILE *file){
                 generate_code(root, file);
             }
             break;
-
+        
+        case BLOCK_ITEM:
+            if (root->visited){
+                if (root->sibling->token.type != CLOSED_BRACE){
+                    generate_code(root->sibling, file);
+                }
+                else{
+                    generate_code(root->root, file);
+                }
+            }
+            else{
+                root->visited = true;
+                generate_code(root->child, file);
+            }
+            break;
+        
         case FUNCTION:
             if (!root->visited){
                 root->visited = true;

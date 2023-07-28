@@ -56,11 +56,48 @@ ast* initialise_sibling(ast *node, tkn token){
     return node->sibling;
 }
 
+str declared_variables[10000];
+
 int local_variable_byte_count = 0;
 int else_count = 0;
 int local_variable_count = 0;
 int and_total_count = 0;
 int or_total_count = 0;
+
+bool is_name_equal(str name1, str name2){
+    bool equal = true;
+    if (name1.character != name2.character){
+        return false;
+    }
+    while (name1.pointer != NULL & name2.pointer != NULL & equal){
+        if (name1.character==name2.character){
+            name1 = *name1.pointer;
+            name2 = *name2.pointer;
+        }
+        else{
+            equal = false;
+        }
+    }
+    if (equal){
+        if (name1.pointer != NULL & name2.pointer == NULL){
+            equal = false;
+        }
+        
+        if (name1.pointer == NULL & name2.pointer != NULL){
+            equal = false;
+        }
+    }
+    return equal;
+}
+
+bool is_declared(str name){
+    for (int i = 0; i<local_variable_count;i++){
+        if (is_name_equal(name, declared_variables[i])){
+            return true;
+        }
+    }
+    return false;
+}
 
 parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
     ast *node;
@@ -197,11 +234,14 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
 
         case DECLARATION_SYMBOL:
             if (token_list->token.type == INT_KEYWORD){
-                local_variable_byte_count += 8;
-                local_variable_count += 1;
                 node = initialise_child(root, token_list->token);
                 token_list = token_list->pointer;
                 if (token_list->token.type == IDENTIFIER){
+                    if (!is_declared(token_list->token.name)){
+                        local_variable_byte_count += 8;
+                        local_variable_count += 1;
+                        declared_variables[local_variable_count] = token_list->token.name;
+                    }
                     node = initialise_sibling(node, token_list->token);
                     token_list = token_list->pointer;
                     if (token_list->token.type == ASSIGNMENT){

@@ -1,7 +1,9 @@
 int main() {
-    if (1){
-        int th;
-        th++;
+    int a = 2;
+    int b = 3;
+    {
+        int a = 1;
+        return b + a;
     }
-    printf("%i", th);
+    return b;
 }

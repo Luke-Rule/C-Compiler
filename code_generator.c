@@ -3,8 +3,14 @@
 #include <math.h>
 #include "parser.c"
 
-//gcc assembly.s -o executable_name
-//echo %errorlevel%
+/*
+gcc -c code_generator.c
+code_generator.exe
+gcc assembly.s -o out
+out.exe
+echo %errorlevel%
+
+*/
 int and_jumper_count = 0;
 int or_jumper_count = 0;
 int and_jumpee_count = 0;
@@ -15,35 +21,10 @@ char number_string[10000];
 typedef struct local_variable{
     str token_name;
     int index;
+    bool declared_in_block;
 } local_variable;
 
 bool function_returned = false;
-
-bool is_name_equal(str name1, str name2){
-    bool equal = true;
-    if (name1.character != name2.character){
-        return false;
-    }
-    while (name1.pointer != NULL & name2.pointer != NULL & equal){
-        if (name1.character==name2.character){
-            name1 = *name1.pointer;
-            name2 = *name2.pointer;
-        }
-        else{
-            equal = false;
-        }
-    }
-    if (equal){
-        if (name1.pointer != NULL & name2.pointer == NULL){
-            equal = false;
-        }
-        
-        if (name1.pointer == NULL & name2.pointer != NULL){
-            equal = false;
-        }
-    }
-    return equal;
-}
 
 int current_local_variable_count = 0;
 int current_local_variable_byte_count = 0;
@@ -53,6 +34,7 @@ int map_counter = 0;
 void add_to_local_variable_map(str name, local_variable local_variable_map[1000]){
     local_variable variable;
     variable.token_name = name;
+    variable.declared_in_block = true;
     current_local_variable_byte_count = current_local_variable_byte_count+8;
     variable.index = current_local_variable_byte_count;
     local_variable_map[current_local_variable_count] = variable;
@@ -63,6 +45,15 @@ bool is_in_local_variable_map(str name, local_variable local_variable_map[1000])
     for (int i = 0; i < current_local_variable_count; i++){
         if (is_name_equal(name, local_variable_map[i].token_name)){
             return true;
+        }
+    }
+    return false;
+}
+
+bool is_declared_in_local_variable_map(str name, local_variable local_variable_map[1000]){
+    for (int i = 0; i < current_local_variable_count; i++){
+        if (is_name_equal(name, local_variable_map[i].token_name)){
+            return local_variable_map[i].declared_in_block;
         }
     }
     return false;
@@ -648,7 +639,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             if (root->visited){
                 if (root->child->token.type == INT_KEYWORD){
                     str variable_name = root->child->sibling->token.name;
-                    if (!is_in_local_variable_map(variable_name, local_variable_map)){
+                    if (!is_declared_in_local_variable_map(variable_name, local_variable_map)){
                         add_to_local_variable_map(variable_name, local_variable_map);
                         if (root->child->sibling->sibling->token.type == ASSIGNMENT){
                             fputs("    pop \%rax\n", file);
@@ -692,14 +683,19 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                     function_returned = true;
                     fputs("    pop \%rax\n", file);
                     
-                    fputs("    add $", file);
-                    sprintf(number_string, "%d", local_variable_byte_count);
-                    fputs(number_string, file);
-                    fputs(", \%rsp\n", file);
-                    fputs("    add $", file);
-                    sprintf(number_string, "%d", local_variable_byte_count);
-                    fputs(number_string, file);
-                    fputs(", \%rbp\n", file);
+                    for (int i = 0; i<map_counter; i++){
+                        fputs("    add $", file);
+                        sprintf(number_string, "%d", local_variable_byte_count);
+                        fputs(number_string, file);
+                        fputs(", \%rsp\n", file);
+                        fputs("    add $", file);
+                        sprintf(number_string, "%d", local_variable_byte_count);
+                        fputs(number_string, file);
+                        fputs(", \%rbp\n", file);
+                    }
+
+                    else_count/=10;
+                    map_counter--;
                     
                     fputs("    mov \%rbp, \%rsp\n", file);
                     fputs("    pop \%rbp\n", file);
@@ -804,6 +800,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                     map_counter++;
                     for (int i = 0; i<local_variable_count; i++){
                         local_variable_maps[map_counter][i] = local_variable_maps[map_counter-1][i];
+                        local_variable_maps[map_counter][i].declared_in_block = false;
                     }
                     else_count*=10;
                     fputs("    sub $", file);

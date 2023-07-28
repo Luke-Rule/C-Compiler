@@ -1,9 +1,8 @@
 int main() {
     int a = 2;
-    int b = 3;
     {
-        int a = 1;
-        return b + a;
+        a = 3;
+        int a = 0;
     }
-    return b;
+    printf("%i", a);
 }

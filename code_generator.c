@@ -3,14 +3,6 @@
 #include <math.h>
 #include "parser.c"
 
-/*
-gcc -c code_generator.c
-code_generator.exe
-gcc assembly.s -o out
-out.exe
-echo %errorlevel%
-
-*/
 int and_jumper_count = 0;
 int or_jumper_count = 0;
 int and_jumpee_count = 0;
@@ -59,6 +51,15 @@ bool is_declared_in_local_variable_map(str name, local_variable local_variable_m
     return false;
 }
 
+bool is_declared_in_block(str name, local_variable local_variable_map[1000]){
+    for (int i = 0; i < current_local_variable_count; i++){
+        if (is_name_equal(name, local_variable_map[i].token_name)){
+            return local_variable_map[i].declared_in_block;
+        }
+    }
+    return false;
+}
+
 int get_local_variable_index(str name, local_variable local_variable_map[1000]){
     for (int i = 0; i < current_local_variable_count; i++){
         if (is_name_equal(name, local_variable_map[i].token_name)){
@@ -98,6 +99,17 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 fputs(number_string, file);
                 fputs("(\%rbp), \%rax\n", file);
                 fputs("    pushq \%rax\n", file);
+                if (map_counter>0 && !is_declared_in_block(root->token.name, local_variable_map)){
+                    fputs("    mov ", file);
+                    sprintf(number_string, "%d", -(get_local_variable_index(name, local_variable_map)));
+                    fputs(number_string, file);
+                    fputs("(\%rbp), ", file);
+                    fputs("\%rax\n", file);
+                    fputs("    mov \%rax, ", file);
+                    sprintf(number_string, "%d", -(get_local_variable_index(name, local_variable_map)-local_variable_byte_count));
+                    fputs(number_string, file);
+                    fputs("(\%rbp)\n", file);
+                }
                 root = root->root;
                 if (root->past_sibling != NULL && (root->past_sibling->token.type == NEGATION | root->past_sibling->token.type == LOGICAL_NEGATION | root->past_sibling->token.type == BITWISE_COMPLEMENT)){
                     generate_code(root->past_sibling, file, local_variable_map);
@@ -764,20 +776,8 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 }
                 else{
                     if (root->child->child->token.type != RETURN_KEYWORD){
-                        for (int i = 0; i < local_variable_count; i++){
-                            if (local_variable_maps[map_counter-1][i].index != 0){
-                                fputs("    mov ", file);
-                                sprintf(number_string, "%d", -(local_variable_map[i].index));
-                                fputs(number_string, file);
-                                fputs("(\%rbp), ", file);
-                                fputs("\%rax\n", file);
-                                fputs("    mov \%rax, ", file);
-                                sprintf(number_string, "%d", -(local_variable_map[i].index-local_variable_byte_count));
-                                fputs(number_string, file);
-                                fputs("(\%rbp)\n", file);
-                            }
-                        }
                         local_variable local;
+                        local.declared_in_block = false;
                         for (int i = 0; i<local_variable_count; i++){
                             local_variable_maps[map_counter][i] = local;
                         }

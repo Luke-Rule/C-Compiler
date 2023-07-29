@@ -33,6 +33,15 @@ void add_to_local_variable_map(str name, local_variable local_variable_map[1000]
     current_local_variable_count++;
 }
 
+void set_declared_in_local_variable_map(str name, local_variable local_variable_map[1000]){
+    for (int i = 0; i < current_local_variable_count; i++){
+        if (is_name_equal(name, local_variable_map[i].token_name)){
+            local_variable_map[i].declared_in_block = true;
+        }
+    }
+    
+}
+
 bool is_in_local_variable_map(str name, local_variable local_variable_map[1000]){
     for (int i = 0; i < current_local_variable_count; i++){
         if (is_name_equal(name, local_variable_map[i].token_name)){
@@ -99,17 +108,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 fputs(number_string, file);
                 fputs("(\%rbp), \%rax\n", file);
                 fputs("    pushq \%rax\n", file);
-                if (map_counter>0 && !is_declared_in_block(root->token.name, local_variable_map)){
-                    fputs("    mov ", file);
-                    sprintf(number_string, "%d", -(get_local_variable_index(name, local_variable_map)));
-                    fputs(number_string, file);
-                    fputs("(\%rbp), ", file);
-                    fputs("\%rax\n", file);
-                    fputs("    mov \%rax, ", file);
-                    sprintf(number_string, "%d", -(get_local_variable_index(name, local_variable_map)-local_variable_byte_count));
-                    fputs(number_string, file);
-                    fputs("(\%rbp)\n", file);
-                }
+                
                 root = root->root;
                 if (root->past_sibling != NULL && (root->past_sibling->token.type == NEGATION | root->past_sibling->token.type == LOGICAL_NEGATION | root->past_sibling->token.type == BITWISE_COMPLEMENT)){
                     generate_code(root->past_sibling, file, local_variable_map);
@@ -636,6 +635,12 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                     sprintf(number_string, "%d", get_local_variable_index(name, local_variable_map));
                     fputs(number_string, file);
                     fputs("(\%rbp)\n", file);
+                    if (map_counter>0 && !is_declared_in_block(name, local_variable_map) && root->past_sibling->past_sibling->past_sibling == NULL){
+                        fputs("    mov \%rax, ", file);
+                        sprintf(number_string, "%d", (local_variable_byte_count+get_local_variable_index(name, local_variable_map)));
+                        fputs(number_string, file);
+                        fputs("(\%rbp)\n", file);
+                    }
                     generate_code(root->root, file, local_variable_map);
                 }
                 else if (root->past_sibling != NULL && root->past_sibling->past_sibling != NULL && (root->past_sibling->past_sibling->token.type == IF_KEYWORD | (root->past_sibling->past_sibling->past_sibling != NULL && root->past_sibling->past_sibling->past_sibling->token.type == INT_KEYWORD))){
@@ -652,7 +657,12 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 if (root->child->token.type == INT_KEYWORD){
                     str variable_name = root->child->sibling->token.name;
                     if (!is_declared_in_local_variable_map(variable_name, local_variable_map)){
-                        add_to_local_variable_map(variable_name, local_variable_map);
+                        if (!is_in_local_variable_map(variable_name, local_variable_map)){
+                            add_to_local_variable_map(variable_name, local_variable_map);
+                        }
+                        else{
+                            set_declared_in_local_variable_map(variable_name, local_variable_map);
+                        }
                         if (root->child->sibling->sibling->token.type == ASSIGNMENT){
                             fputs("    pop \%rax\n", file);
                             fputs("    mov \%rax, ", file);

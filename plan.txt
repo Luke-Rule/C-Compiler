@@ -1,0 +1,9 @@
+move into new block
+init
+_condition 
+evaluate condition 
+je end 
+statement
+post expression 
+jmp _condition
+_end

@@ -38,6 +38,12 @@ typedef enum token_type{
     ELSE_KEYWORD,
     COLON,
     QUESTION_MARK,
+    FOR_KEYWORD,
+    WHILE_KEYWORD,
+    DO_KEYWORD,
+    BREAK_KEYWORD,
+    CONTINUE_KEYWORD,
+    NULL_KEYWORD,
 
     INVALID,
 
@@ -46,6 +52,7 @@ typedef enum token_type{
     BLOCK_ITEM,
     DECLARATION,
     STATEMENT,
+    EXPRESSION_OPTION,
     EXPRESSION,
     CONDITIONAL_EXPRESSION,
     LOGICAL_OR_EXPRESSION,
@@ -244,6 +251,11 @@ tkn_type typify_token(tkn *token, tkn *previous){
     bool possible_int_keyword = false;
     bool possible_if_keyword = false;
     bool possible_else_keyword = false;
+    bool possible_for_keyword = false;
+    bool possible_while_keyword = false;
+    bool possible_do_keyword = false;
+    bool possible_continue_keyword = false;
+    bool possible_break_keyword = false;
     tkn_type type = INVALID;
     switch (name.character)
         {
@@ -371,6 +383,26 @@ tkn_type typify_token(tkn *token, tkn *previous){
             possible_else_keyword = true;
             break;
         
+        case 'f':
+            possible_for_keyword = true;
+            break;
+        
+        case 'w':
+            possible_while_keyword = true;
+            break;
+        
+        case 'd':
+            possible_do_keyword = true;
+            break;
+        
+        case 'b':
+            possible_break_keyword = true;
+            break;
+        
+        case 'c':
+            possible_continue_keyword = true;
+            break;
+        
         default:
             break;
     }
@@ -454,7 +486,106 @@ tkn_type typify_token(tkn *token, tkn *previous){
             return ELSE_KEYWORD;
         }
     }
-
+    else if (possible_for_keyword){
+        char for_keyword[] = {'o','r'};
+        for (int i = 0; i<2; i++){
+            if (name.pointer != NULL){
+                name = *name.pointer;
+                if (name.character != for_keyword[i]){
+                    possible_for_keyword = false;
+                }
+            }
+            else{
+                possible_for_keyword = false;
+            }
+        }
+        if (possible_for_keyword & name.pointer!=NULL){
+            possible_for_keyword = false;
+        }
+        else if (possible_for_keyword){
+            return FOR_KEYWORD;
+        }
+    }
+    else if (possible_while_keyword){
+        char while_keyword[] = {'h','i','l','e'};
+        for (int i = 0; i<4; i++){
+            if (name.pointer != NULL){
+                name = *name.pointer;
+                if (name.character != while_keyword[i]){
+                    possible_while_keyword = false;
+                }
+            }
+            else{
+                possible_while_keyword = false;
+            }
+        }
+        if (possible_while_keyword & name.pointer!=NULL){
+            possible_while_keyword = false;
+        }
+        else if (possible_while_keyword){
+            return WHILE_KEYWORD;
+        }
+    }
+    else if (possible_do_keyword){
+        char do_keyword[] = {'o'};
+        for (int i = 0; i<1; i++){
+            if (name.pointer != NULL){
+                name = *name.pointer;
+                if (name.character != do_keyword[i]){
+                    possible_do_keyword = false;
+                }
+            }
+            else{
+                possible_do_keyword = false;
+            }
+        }
+        if (possible_do_keyword & name.pointer!=NULL){
+            possible_do_keyword = false;
+        }
+        else if (possible_do_keyword){
+            return DO_KEYWORD;
+        }
+    }
+    else if (possible_break_keyword){
+        char break_keyword[] = {'r','e','a','k'};
+        for (int i = 0; i<4; i++){
+            if (name.pointer != NULL){
+                name = *name.pointer;
+                if (name.character != break_keyword[i]){
+                    possible_break_keyword = false;
+                }
+            }
+            else{
+                possible_break_keyword = false;
+            }
+        }
+        if (possible_break_keyword & name.pointer!=NULL){
+            possible_break_keyword = false;
+        }
+        else if (possible_break_keyword){
+            return BREAK_KEYWORD;
+        }
+    }
+    else if (possible_continue_keyword){
+        char continue_keyword[] = {'o','n','t','i','n','u','e'};
+        for (int i = 0; i<4; i++){
+            if (name.pointer != NULL){
+                name = *name.pointer;
+                if (name.character != continue_keyword[i]){
+                    possible_continue_keyword = false;
+                }
+            }
+            else{
+                possible_continue_keyword = false;
+            }
+        }
+        if (possible_continue_keyword & name.pointer!=NULL){
+            possible_continue_keyword = false;
+        }
+        else if (possible_continue_keyword){
+            return CONTINUE_KEYWORD;
+        }
+    }
     name = *temp;
     if (isdigit(name.character)){
         while (name.pointer != NULL){

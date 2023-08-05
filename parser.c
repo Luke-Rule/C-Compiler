@@ -61,7 +61,7 @@ str declared_variables[10000];
 
 int local_variable_byte_count = 0;
 int else_count = 0;
-int for_count = 1;
+int for_count = 0;
 int while_count = 0;
 int do_while_count = 0;
 int local_variable_count = 0;
@@ -542,18 +542,13 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                                 if (token_list->token.type == CLOSED_PARENTHESES){
                                     node = initialise_sibling(node, token_list->token);
                                     token_list = token_list->pointer;
-                                    node = initialise_sibling(node, statement);
-                                    statement_return = parse(token_list, STATEMENT_SYMBOL, node);
-                                    if (statement_return.valid){
-                                        token_list = statement_return.token_list;
-                                        if (token_list->token.type == SEMICOLON){
-                                            node = initialise_sibling(node, token_list->token);
-                                            token_list = token_list->pointer;
-                                            return_value.token_list = token_list;
-                                            return_value.valid = true;
-                                            return return_value;
-                                            break;
-                                        }
+                                    if (token_list->token.type == SEMICOLON){
+                                        node = initialise_sibling(node, token_list->token);
+                                        token_list = token_list->pointer;
+                                        return_value.token_list = token_list;
+                                        return_value.valid = true;
+                                        return return_value;
+                                        break;
                                     }
                                 }
                             }

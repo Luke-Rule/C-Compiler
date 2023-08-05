@@ -288,7 +288,7 @@ tkn_type typify_token(tkn *token, tkn *previous){
             break;
 
         case '-':
-            if (previous->type == INT_LITERAL){
+            if (previous->type == INT_LITERAL | previous->type == IDENTIFIER){
                 return SUBTRACTION;
             }
             return NEGATION;

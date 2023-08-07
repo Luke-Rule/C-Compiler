@@ -568,7 +568,7 @@ tkn_type typify_token(tkn *token, tkn *previous){
     }
     else if (possible_continue_keyword){
         char continue_keyword[] = {'o','n','t','i','n','u','e'};
-        for (int i = 0; i<4; i++){
+        for (int i = 0; i<7; i++){
             if (name.pointer != NULL){
                 name = *name.pointer;
                 if (name.character != continue_keyword[i]){

@@ -561,7 +561,7 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                 break;
             }
             else if (token_list->token.type == BREAK_KEYWORD){
-                node = initialise_child(node, token_list->token);
+                node = initialise_child(root, token_list->token);
                 token_list = token_list->pointer;
                 if (token_list->token.type == SEMICOLON){
                     node = initialise_sibling(node, token_list->token);
@@ -577,7 +577,7 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                 break;
             }
             else if (token_list->token.type == CONTINUE_KEYWORD){
-                node = initialise_child(node, token_list->token);
+                node = initialise_child(root, token_list->token);
                 token_list = token_list->pointer;
                 if (token_list->token.type == SEMICOLON){
                     node = initialise_sibling(node, token_list->token);

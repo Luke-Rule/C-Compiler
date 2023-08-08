@@ -1223,6 +1223,13 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         fputs(number_string, file);
                         fputs(", \%rbp\n", file);
                     }
+                    else{
+                        else_count/=10;
+                        for_count/=10;
+                        while_count/=10;
+                        do_while_count/=10;
+                        map_counter--;
+                    }
                     generate_code(root->root, file, local_variable_maps[map_counter]);
                 }
             }

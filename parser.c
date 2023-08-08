@@ -613,8 +613,54 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
             break;
         
         case EXPRESSION_OPTION_SYMBOL:
-            if (token_list->token.type == SEMICOLON){
+            if (token_list->token.type == SEMICOLON && root->past_sibling!=NULL && root->past_sibling->token.type == SEMICOLON && root->root->child->token.type == FOR_KEYWORD){
+                tkn one_token;
+                str one_str;
+                one_str.character = '1';
+                one_str.pointer = NULL;
+                one_token.name = one_str;
+                one_token.type = INT_LITERAL;
+                tkn semicolon_token;
+                str semicolon_str;
+                semicolon_str.character = ';';
+                semicolon_str.pointer = NULL;
+                semicolon_token.name = semicolon_str;
+                semicolon_token.type = SEMICOLON;
+                tkn_list* new_node = (tkn_list*)malloc(sizeof(tkn_list));
+                tkn_list* new_node_2 = (tkn_list*)malloc(sizeof(tkn_list));
+                new_node->token = one_token;
+                new_node->pointer = new_node_2;
+                new_node_2->token = semicolon_token;
+                new_node_2->pointer = token_list->pointer;
+                token_list->pointer = new_node;
                 token_list = token_list->pointer;
+                node = initialise_child(root, expression);
+                expression_return = parse(token_list, EXPRESSION_SYMBOL, node);
+                if (expression_return.valid){
+                    token_list = expression_return.token_list;
+                    return_value.token_list = token_list;
+                    return_value.valid = true;
+                    return return_value;
+                    break;
+                }
+                return_value.token_list = token_list;
+                return_value.valid = false;
+                return return_value;
+                break;
+            }
+            else if (token_list->token.type == SEMICOLON){
+                tkn null_token;
+                null_token.type = NULL_KEYWORD;
+                initialise_child(root, null_token);
+                return_value.token_list = token_list;
+                return_value.valid = true;
+                return return_value;
+                break;
+            }
+            else if (token_list->token.type == CLOSED_PARENTHESES && root->past_sibling->token.type == SEMICOLON && root->root->child->token.type == FOR_KEYWORD){
+                tkn null_token;
+                null_token.type = NULL_KEYWORD;
+                initialise_child(root, null_token);
                 return_value.token_list = token_list;
                 return_value.valid = true;
                 return return_value;

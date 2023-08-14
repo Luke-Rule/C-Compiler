@@ -68,6 +68,8 @@ typedef enum token_type{
 typedef struct tkn{
     str name;
     enum token_type type;
+    int line_index;
+    int character_index;
 } tkn;
 
 typedef struct tkn_list{
@@ -155,6 +157,9 @@ bool is_comparator(char character){
     return false;
 }
 
+int line_number = 1;
+int character_number = 1;
+
 tkn_return get_next_token(FILE *file_pointer){
     char character;
     char last_character;
@@ -164,6 +169,13 @@ tkn_return get_next_token(FILE *file_pointer){
     token_string->pointer = NULL;
     character=fgetc(file_pointer);
     while (character == ' ' | character == '\n'){
+        if (character == '\n'){
+            line_number++;
+            character_number = 0;
+        }
+        else{
+            character_number++;
+        }
         character=fgetc(file_pointer);
     }
     if (is_ending_token_exc_comparators(character)){
@@ -173,12 +185,15 @@ tkn_return get_next_token(FILE *file_pointer){
     while (character != EOF & character != ' ' & character != '\n' & !end){
         append_string(token_string, character);
         last_character = character;
+        character_number++;
         character=fgetc(file_pointer);
         if (!is_comparator(last_character) & is_ending_token(character)){
+            character_number--;
             end = true;
             fseek(file_pointer, -1, SEEK_CUR);
         }
         if (is_comparator(last_character) & (is_ending_token_for_comparators(character) | character == '!')){
+            character_number--;
             end = true;
             fseek(file_pointer, -1, SEEK_CUR);
         }
@@ -188,6 +203,8 @@ tkn_return get_next_token(FILE *file_pointer){
         }
     }
     tkn token;
+    token.line_index = line_number;
+    token.character_index = character_number;
     if (token_string->pointer != NULL){
         token.name = *(token_string->pointer);
     }
@@ -305,6 +322,17 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer == NULL){
                 return LOGICAL_NEGATION;
             }
+            printf("%c", '\'');
+            while (name.pointer != NULL){
+                printf("%c", name.character);
+                name = *name.pointer;
+            }
+            printf("%c", name.character);
+            printf("%s", "\' invalid token [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
             return INVALID;
             break;
 
@@ -324,6 +352,17 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer != NULL && name.pointer->character == '&' && name.pointer->pointer == NULL){
                 return AND;
             }
+            printf("%c", '\'');
+            while (name.pointer != NULL){
+                printf("%c", name.character);
+                name = *name.pointer;
+            }
+            printf("%c", name.character);
+            printf("%s", "\' invalid token [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
             return INVALID;
             break;
 
@@ -331,6 +370,17 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer != NULL && name.pointer->character == '|' && name.pointer->pointer == NULL){
                 return OR;
             }
+            printf("%c", '\'');
+            while (name.pointer != NULL){
+                printf("%c", name.character);
+                name = *name.pointer;
+            }
+            printf("%c", name.character);
+            printf("%s", "\' invalid token [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
             return INVALID;
             break;
 
@@ -341,6 +391,17 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer == NULL){
                 return ASSIGNMENT;
             }
+            printf("%c", '\'');
+            while (name.pointer != NULL){
+                printf("%c", name.character);
+                name = *name.pointer;
+            }
+            printf("%c", name.character);
+            printf("%s", "\' invalid token [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
             return INVALID;
             break;
 
@@ -351,6 +412,17 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer == NULL){
                 return LESS_THAN;
             }
+            printf("%c", '\'');
+            while (name.pointer != NULL){
+                printf("%c", name.character);
+                name = *name.pointer;
+            }
+            printf("%c", name.character);
+            printf("%s", "\' invalid token [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
             return INVALID;
             break;
 
@@ -361,6 +433,17 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer == NULL){
                 return GREATER_THAN;
             }
+            printf("%c", '\'');
+            while (name.pointer != NULL){
+                printf("%c", name.character);
+                name = *name.pointer;
+            }
+            printf("%c", name.character);
+            printf("%s", "\' invalid token [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
             return INVALID;
             break;
 
@@ -589,14 +672,58 @@ tkn_type typify_token(tkn *token, tkn *previous){
     name = *temp;
     if (isdigit(name.character)){
         while (name.pointer != NULL){
-            if (!isdigit(name.character) | !is_valid_char(name.character)){
-                printf("%s", "Invalid token");
+            if (!isdigit(name.character)){
+                printf("%s", "Invalid suffix \'");
+                while (name.pointer != NULL){
+                    printf("%c", name.character);
+                    name = *name.pointer;
+                }
+                printf("%c", name.character);
+                printf("%s", "\' on integer constant");
+                printf("%s", " [Ln ");
+                printf("%i", token->line_index);
+                printf("%s", ", Col ");
+                printf("%i", token->character_index);
+                printf("%s", "]\n");
+                return INVALID;
+            }
+            if (!is_valid_char(name.character)){
+                printf("%c", '\'');
+                printf("%c", name.character);
+                printf("%s", "\' invalid character");
+                printf("%s", " [Ln ");
+                printf("%i", token->line_index);
+                printf("%s", ", Col ");
+                printf("%i", token->character_index);
+                printf("%s", "]\n");
                 return INVALID;
             }
             name = *name.pointer;
         }
         if (!isdigit(name.character)){
-            printf("%s", "Invalid token");
+            printf("%s", "Invalid suffix \'");
+            while (name.pointer != NULL){
+                printf("%c", name.character);
+                name = *name.pointer;
+            }
+            printf("%c", name.character);
+            printf("%s", "\' on integer constant");
+            printf("%s", " [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
+            return INVALID;
+        }
+        if (!is_valid_char(name.character)){
+            printf("%c", '\'');
+            printf("%c", name.character);
+            printf("%s", "\' invalid character");
+            printf("%s", " [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
             return INVALID;
         }
         return INT_LITERAL;
@@ -604,17 +731,43 @@ tkn_type typify_token(tkn *token, tkn *previous){
     else{
         while (name.pointer != NULL){
             if (!is_valid_char(name.character)){
+                printf("%c", '\'');
+                printf("%c", name.character);
+                printf("%s", "\' invalid character");
+                printf("%s", " [Ln ");
+                printf("%i", token->line_index);
+                printf("%s", ", Col ");
+                printf("%i", token->character_index);
+                printf("%s", "]\n");
                 return INVALID;
             }
             name = *name.pointer;
         }
         if (!is_valid_char(name.character)){
-            printf("%s", "Invalid token");
+            printf("%c", '\'');
+            printf("%c", name.character);
+            printf("%s", "\' invalid character");
+            printf("%s", " [Ln ");
+            printf("%i", token->line_index);
+            printf("%s", ", Col ");
+            printf("%i", token->character_index);
+            printf("%s", "]\n");
             return INVALID;
         }
         return IDENTIFIER;
     }
-    printf("%s", "Invalid token");
+    printf("%c", '\'');
+    while (name.pointer != NULL){
+        printf("%c", name.character);
+        name = *name.pointer;
+    }
+    printf("%c", name.character);
+    printf("%s", "\' invalid token");
+    printf("%s", " [Ln ");
+    printf("%i", token->line_index);
+    printf("%s", ", Col ");
+    printf("%i", token->character_index);
+    printf("%s", "]\n");
     return INVALID;
 }
 
@@ -655,7 +808,7 @@ tkn_list* typify_tokens(tkn_list *token_list){
             new_token.type = OPEN_BRACE;
             str string;
             string.character = '{';
-            string.pointer = NULL;
+            string.pointer = NULL;    
             new_token.name = string;
             new_node->token = new_token;
             new_node->pointer = token_list->pointer;

@@ -1,11 +1,11 @@
 int main() {
-    int sum = 0;
-    int i;
-    for (;1;) {
-        i = i + 1;
-        if (i / 2 == (i + 1) / 2)
-            continue;
-        sum = sum + i;
+    int a = 1;
+
+     (a / 3 < 20) {
+        int b = 1;
+        while (b < 10)
+            b = b*2;
+        a = a + b;
     }
-    return sum;
+    printf("%i", a);    
 }

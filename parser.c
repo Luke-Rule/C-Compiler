@@ -161,9 +161,13 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                 return return_value;
                 break;
             }
+            printf("%s", "Invalid token order [Ln ");
+            printf("%i", return_value.token_list->token.line_index);
+            printf("%s", ", Col ");
+            printf("%i", return_value.token_list->token.character_index);
+            printf("%s", "]\n");
             return_value.token_list = token_list;
             return_value.valid = false;
-            printf("%s", "invalid token order");
             return return_value;
             break;
 
@@ -414,6 +418,21 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                                             node = initialise_sibling(node, token_list->token);
                                             token_list = token_list->pointer;
                                             node = initialise_sibling(node, statement);
+                                            if (token_list->token.type != OPEN_BRACE){
+                                                tkn new_token;
+                                                str new_name;
+                                                new_name.character = '{';
+                                                new_name.pointer = NULL;
+                                                new_token.name = new_name;
+                                                new_token.type = OPEN_BRACE;
+                                                node = initialise_child(node, new_token);
+                                                node = initialise_sibling(node, block_item);
+                                                new_name.character = '}';
+                                                new_token.name = new_name;
+                                                new_token.type = CLOSED_BRACE;
+                                                initialise_sibling(node, new_token);
+                                                node = initialise_child(node, statement);
+                                            }
                                             statement_return = parse(token_list, STATEMENT_SYMBOL, node);
                                             if (statement_return.valid){
                                                 token_list = statement_return.token_list;
@@ -472,6 +491,21 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                                         node = initialise_sibling(node, token_list->token);
                                         token_list = token_list->pointer;
                                         node = initialise_sibling(node, statement);
+                                        if (token_list->token.type != OPEN_BRACE){
+                                            tkn new_token;
+                                            str new_name;
+                                            new_name.character = '{';
+                                            new_name.pointer = NULL;
+                                            new_token.name = new_name;
+                                            new_token.type = OPEN_BRACE;
+                                            node = initialise_child(node, new_token);
+                                            node = initialise_sibling(node, block_item);
+                                            new_name.character = '}';
+                                            new_token.name = new_name;
+                                            new_token.type = CLOSED_BRACE;
+                                            initialise_sibling(node, new_token);
+                                            node = initialise_child(node, statement);
+                                        }
                                         statement_return = parse(token_list, STATEMENT_SYMBOL, node);
                                         if (statement_return.valid){
                                             token_list = statement_return.token_list;

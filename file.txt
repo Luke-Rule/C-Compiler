@@ -1,8 +1,8 @@
+int fib(int n) {
+    return n*10;
+}
+
 int main() {
-    int a = 0;
-
-    while ( < 5)
-        a = a + 2;
-
-    return a;
+    int n = 10;
+    return fib(n);
 }

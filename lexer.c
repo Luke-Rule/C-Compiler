@@ -20,6 +20,7 @@ typedef enum token_type{
     INT_LITERAL,
     NEGATION,
     BITWISE_COMPLEMENT,
+    COMMA,
     LOGICAL_NEGATION,
     ADDITION,
     DIVISION,
@@ -60,6 +61,7 @@ typedef enum token_type{
     EQUALITY_EXPRESSION,
     RELATIONAL_EXPRESSION,
     ADDITIVE_EXPRESSION,
+    FUNCTION_CALL,
     TERM,
     FACTOR,
     UNARY_OP
@@ -118,8 +120,8 @@ int get_int_value(str *string, int count){
 }
 
 bool is_ending_token(char character){
-    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '!', '+', '/', '*', '&', '|', '=', '<', '>'};
-    for (int i = 0; i<16; i++){
+    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '!', '+', '/', '*', '&', '|', '=', '<', '>', ','};
+    for (int i = 0; i<17; i++){
         if (character==ending_tokens[i]){
             return true;
         }
@@ -128,8 +130,8 @@ bool is_ending_token(char character){
 }
 
 bool is_ending_token_exc_comparators(char character){
-    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '+', '/', '*'};
-    for (int i = 0; i<10; i++){
+    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '+', '/', '*', ','};
+    for (int i = 0; i<11; i++){
         if (character==ending_tokens[i]){
             return true;
         }
@@ -138,8 +140,8 @@ bool is_ending_token_exc_comparators(char character){
 }
 
 bool is_ending_token_for_comparators(char character){
-    char valid_chars[] = {' ', 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','_','1','2','3','4','5','6','7','8','9','0', '(', ')', '{', '}', ';', '-', '~', '+', '/', '*'};
-    for (int i = 0; i<26*2+11+11; i++){
+    char valid_chars[] = {' ', ',', 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','_','1','2','3','4','5','6','7','8','9','0', '(', ')', '{', '}', ';', '-', '~', '+', '/', '*'};
+    for (int i = 0; i<26*2+11+12; i++){
         if (character==valid_chars[i]){
             return true;
         }
@@ -313,6 +315,10 @@ tkn_type typify_token(tkn *token, tkn *previous){
 
         case '~':
             return BITWISE_COMPLEMENT;
+            break;
+        
+        case ',':
+            return COMMA;
             break;
         
         case '!':

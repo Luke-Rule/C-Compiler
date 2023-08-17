@@ -2,8 +2,8 @@
 int fib(int v){
     return a;
 }
-int a;
+int a = 5;
 int main(){
     a= 9;
-    return fib(3);
+    return fib(3, 2);
 }

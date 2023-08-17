@@ -310,9 +310,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 printf("%c", name.character);
                 printf("%s", "\' ");
                 printf("%s", " [Ln ");
-                printf("%i", root->token.line_index);
+                printf("%i", root->child->token.line_index);
                 printf("%s", ", Col ");
-                printf("%i", root->token.character_index);
+                printf("%i", root->child->token.character_index);
                 printf("%s", "]\n");
                 break;
             }
@@ -339,9 +339,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 printf("%c", name.character);
                 printf("%s", "\' ");
                 printf("%s", " [Ln ");
-                printf("%i", root->token.line_index);
+                printf("%i", root->child->token.line_index);
                 printf("%s", ", Col ");
-                printf("%i", root->token.character_index);
+                printf("%i", root->child->token.character_index);
                 printf("%s", "]\n");
             }
             else if (get_number_of_parameters(root->child->token.name) > number_of_parameters){
@@ -354,9 +354,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 printf("%c", name.character);
                 printf("%s", "\' ");
                 printf("%s", " [Ln ");
-                printf("%i", root->token.line_index);
+                printf("%i", root->child->token.line_index);
                 printf("%s", ", Col ");
-                printf("%i", root->token.character_index);
+                printf("%i", root->child->token.character_index);
                 printf("%s", "]\n");
             }
             else if (get_number_of_parameters(root->child->token.name)>0 && !root->child->sibling->sibling->visited){
@@ -1049,9 +1049,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         printf("%c", name.character);
                         printf("%s", "\' undeclared");
                         printf("%s", " [Ln ");
-                        printf("%i", root->token.line_index);
+                        printf("%i", root->root->past_sibling->past_sibling->token.line_index);
                         printf("%s", ", Col ");
-                        printf("%i", root->token.character_index);
+                        printf("%i", root->root->past_sibling->past_sibling->token.character_index);
                         printf("%s", "]\n");
                     }
                 }
@@ -1121,9 +1121,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         printf("%c", name.character);
                         printf("%s", "\' undeclared");
                         printf("%s", " [Ln ");
-                        printf("%i", root->token.line_index);
+                        printf("%i", root->past_sibling->past_sibling->token.line_index);
                         printf("%s", ", Col ");
-                        printf("%i", root->token.character_index);
+                        printf("%i", root->past_sibling->past_sibling->token.character_index);
                         printf("%s", "]\n");
                     }
                 }
@@ -1135,7 +1135,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 if (root->child->token.type == INT_KEYWORD){
                     str variable_name = root->child->sibling->token.name;
                     if (root->root->token.type == PROGRAM){
-                        if (!is_global_variable_declared(variable_name) && !is_function_declared(variable_name)){
+                        if (!is_global_variable_defined(variable_name) && !is_function_declared(variable_name)){
                             add_global_variable(variable_name);
                             if (root->child->sibling->sibling->token.type == ASSIGNMENT){
                                 set_global_variable_as_defined(variable_name);
@@ -1174,9 +1174,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                             printf("%c", name.character);
                             printf("%s", "\' already declared");
                             printf("%s", " [Ln ");
-                            printf("%i", root->token.line_index);
+                            printf("%i", root->child->sibling->token.line_index);
                             printf("%s", ", Col ");
-                            printf("%i", root->token.character_index);
+                            printf("%i", root->child->sibling->token.character_index);
                             printf("%s", "]\n");
                             break;
                         }
@@ -1214,9 +1214,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                             printf("%c", name.character);
                             printf("%s", "\' already declared");
                             printf("%s", " [Ln ");
-                            printf("%i", root->token.line_index);
+                            printf("%i", root->child->sibling->token.line_index);
                             printf("%s", ", Col ");
-                            printf("%i", root->token.character_index);
+                            printf("%i", root->child->sibling->token.character_index);
                             printf("%s", "]\n");
                             break;
                         }
@@ -1243,18 +1243,12 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         
         case BREAK_KEYWORD:
             root->visited = true;
-            root_count = 1;
-            
-            temp = root_counter(root, 0);
-            while (temp->root->root->child->token.type != WHILE_KEYWORD && temp->root->root->child->token.type != DO_KEYWORD && temp->root->root->child->token.type != FOR_KEYWORD){
-                temp = root_counter(root, root_count);
-                root_count++;
-                if (temp->root->root == NULL){
-                    break;
-                }
+            temp = root;
+            while (temp->root->token.type != PROGRAM && temp->root->root->child->token.type != WHILE_KEYWORD && temp->root->root->child->token.type != DO_KEYWORD && temp->root->root->child->token.type != FOR_KEYWORD){
+                temp = temp->root;
             }
-            if (temp->root->root == NULL){
-                printf("%s", "Cannot have a break outside a loop \'");
+            if (temp->root->token.type == PROGRAM){
+                printf("%s", "Cannot have a break outside a loop");
                 printf("%s", " [Ln ");
                 printf("%i", root->token.line_index);
                 printf("%s", ", Col ");
@@ -1288,16 +1282,12 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         case CONTINUE_KEYWORD:
             root->visited = true;
             root_count = 1;
-            temp = root_counter(root, 0);
-            while (temp->root->root->child->token.type != WHILE_KEYWORD && temp->root->root->child->token.type != DO_KEYWORD && temp->root->root->child->token.type != FOR_KEYWORD){
-                temp = root_counter(root, root_count);
-                root_count++;
-                if (temp->root->root == NULL){
-                    break;
-                }
+            temp = root;
+            while (temp->root->token.type != PROGRAM && temp->root->root->child->token.type != WHILE_KEYWORD && temp->root->root->child->token.type != DO_KEYWORD && temp->root->root->child->token.type != FOR_KEYWORD){
+                temp = temp->root;
             }
-            if (temp->root->root == NULL){
-                printf("%s", "Cannot have break outside a loop");
+            if (temp->root->token.type == PROGRAM){
+                printf("%s", "Cannot have a continue outside a loop");
                 printf("%s", " [Ln ");
                 printf("%i", root->token.line_index);
                 printf("%s", ", Col ");
@@ -1756,6 +1746,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 root->visited = true;
                 function_returned = false;
                 str name = root->child->sibling->token.name;
+                temp = root->child->sibling;
                 int counter = 0;
                 int number_of_parameters = 0;
                 root = root->child->sibling->sibling;
@@ -1777,7 +1768,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 }
                 root = root->root;
                 
-                if (is_function_defined(name) && !function_is_prototype){
+                if ((is_function_defined(name) && !function_is_prototype) || is_global_variable_declared(name)){
                     printf("%s", "Redefinition of \'");
                     while (name.pointer != NULL){
                         printf("%c", name.character);
@@ -1786,9 +1777,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                     printf("%c", name.character);   
                     printf("%s", "\'");
                     printf("%s", " [Ln ");
-                    printf("%i", root->token.line_index);
+                    printf("%i", temp->token.line_index);
                     printf("%s", ", Col ");
-                    printf("%i", root->token.character_index);
+                    printf("%i", temp->token.character_index);
                     printf("%s", "]\n");
                     break;
                 }
@@ -1803,9 +1794,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                     printf("%c", name.character);   
                     printf("%s", "\'");
                     printf("%s", " [Ln ");
-                    printf("%i", root->token.line_index);
+                    printf("%i", temp->token.line_index);
                     printf("%s", ", Col ");
-                    printf("%i", root->token.character_index);
+                    printf("%i", temp->token.character_index);
                     printf("%s", "]\n");
                     break;
                 }

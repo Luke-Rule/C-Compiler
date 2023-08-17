@@ -1,8 +1,5 @@
-int fib(int n) {
-    return n*10;
-}
+int abs(int c);
 
 int main() {
-    int n = 10;
-    return fib(n);
+    return abs(-9000);
 }

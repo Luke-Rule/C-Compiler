@@ -84,12 +84,17 @@ bool is_name_equal(str name1, str name2){
         }
     }
     if (equal){
-        if (name1.pointer != NULL & name2.pointer == NULL){
-            equal = false;
+        if (name1.character == name2.character){
+            if (name1.pointer != NULL & name2.pointer == NULL){
+                equal = false;
+            }
+            
+            if (name1.pointer == NULL & name2.pointer != NULL){
+                equal = false;
+            }
         }
-        
-        if (name1.pointer == NULL & name2.pointer != NULL){
-            equal = false;
+        else{
+            return false;
         }
     }
     return equal;
@@ -434,22 +439,27 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                 break;
             }
             else if (token_list->token.type == OPEN_BRACE){
-                node = initialise_child(root, token_list->token);
-                token_list = token_list->pointer;
-                while (token_list->token.type != CLOSED_BRACE){
-                    node = initialise_sibling(node, block_item);
-                    block_item_return = parse(token_list, BLOCK_ITEM_SYMBOL, node);
-                    if (block_item_return.valid){
-                        token_list = block_item_return.token_list;
+                if (token_list->pointer->token.type != CLOSED_BRACE){
+                    node = initialise_child(root, token_list->token);
+                    token_list = token_list->pointer;
+                    while (token_list->token.type != CLOSED_BRACE){
+                        node = initialise_sibling(node, block_item);
+                        block_item_return = parse(token_list, BLOCK_ITEM_SYMBOL, node);
+                        if (block_item_return.valid){
+                            token_list = block_item_return.token_list;
+                        }
+                        else{
+                            return_value.token_list = token_list;
+                            return_value.valid = false;
+                            return return_value;
+                            break;
+                        }
                     }
-                    else{
-                        return_value.token_list = token_list;
-                        return_value.valid = false;
-                        return return_value;
-                        break;
-                    }
+                    initialise_sibling(node, token_list->token);
                 }
-                initialise_sibling(node, token_list->token);
+                else{
+                    token_list = token_list->pointer;
+                }
                 token_list = token_list->pointer;
                 return_value.token_list = token_list;
                 return_value.valid = true;

@@ -1,4 +1,3 @@
-
 int main(){
-    return x(5);
+    getchar(1);
 } 

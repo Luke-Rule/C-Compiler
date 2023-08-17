@@ -13,26 +13,6 @@ int local_variable_byte_count_to_add = 0;
 int local_variable_count_to_add = 0;
 char number_string[10000];
 
-typedef struct stack{
-    int int_stack[10000];
-    int head;
-} stack;
-
-stack map_counter_stack;
-
-void push_stack(int value, stack stack){
-    stack.int_stack[stack.head] = value;
-    stack.head++;
-}
-
-int pop_stack(stack stack){
-    if (stack.head>0){
-        stack.head--;
-        return stack.int_stack[stack.head++];
-    }
-    return 0;
-}
-
 typedef struct function{
     str function_name;
     int index;
@@ -257,6 +237,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             break;
         
         case FUNCTION_CALL:
+            root->visited = true;
             if (!is_function_declared(root->child->token.name)){
                 str name = root->child->token.name;
                 printf("%s", "Reference to undeclared function \'");
@@ -271,14 +252,60 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 printf("%s", ", Col ");
                 printf("%i", root->token.character_index);
                 printf("%s", "]\n");
-
+                break;
+            }
+            int counter = 0;
+            int number_of_parameters = 0;
+            root = root->child->sibling->sibling;
+            counter = 0;
+            while (root->token.type != CLOSED_PARENTHESES){
+                root = root->sibling;
+                counter++;
+            }
+            number_of_parameters = 0;
+            if (counter>0){
+                number_of_parameters += (counter+1)/2; 
+            }
+            root = root->root;
+            if (get_number_of_parameters(root->child->token.name) < number_of_parameters){
+                str name = root->child->token.name;
+                printf("%s", "Too many arguments in function call \'");
+                while (name.pointer != NULL){
+                    printf("%c", name.character);
+                    name = *name.pointer;
+                }
+                printf("%c", name.character);
+                printf("%s", "\' ");
+                printf("%s", " [Ln ");
+                printf("%i", root->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->token.character_index);
+                printf("%s", "]\n");
+            }
+            else if (get_number_of_parameters(root->child->token.name) > number_of_parameters){
+                str name = root->child->token.name;
+                printf("%s", "Too few arguments in function call \'");
+                while (name.pointer != NULL){
+                    printf("%c", name.character);
+                    name = *name.pointer;
+                }
+                printf("%c", name.character);
+                printf("%s", "\' ");
+                printf("%s", " [Ln ");
+                printf("%i", root->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->token.character_index);
+                printf("%s", "]\n");
             }
             else if (get_number_of_parameters(root->child->token.name)>0 && !root->child->sibling->sibling->visited){
-                generate_code(root->child->sibling->sibling, file, local_variable_map);
+                root = root->child;
+                while (root->sibling->token.type != CLOSED_PARENTHESES){
+                    root = root->sibling;
+                }
+                generate_code(root, file, local_variable_map);
             }
             else{
                 fputs("    call ", file);
-                push_stack(map_counter, map_counter_stack);
                 str name2 = root->child->token.name;
                 str temp = name2;
                 while (name2.pointer != NULL){
@@ -288,16 +315,18 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 fputc(name2.character, file);
                 fputs("\n", file);
                 fputs("    add $", file);
-                int offset = 8*get_number_of_parameters(temp);
+                int offset = 8*fmax(0,(get_number_of_parameters(temp)-4));
                 sprintf(number_string, "%d", offset);
                 fputs(number_string, file);
                 fputs(", \%rsp\n", file);
-                generate_code(root->root->root, file, local_variable_map);
+                fputs("    pushq \%rax\n", file);
+                generate_code(root->root, file, local_variable_map);
             }
             break;
         
         case FACTOR:
-            if (root->child->token.type == FUNCTION_CALL){
+            if (root->child->token.type == FUNCTION_CALL && !root->child->visited){
+                root->visited = true;
                 generate_code(root->child, file, local_variable_map);
             }
             else if (root->visited & root->past_sibling == NULL){
@@ -330,8 +359,8 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         case MULTIPLICATION:
             root->visited = true;
             fputs("    pop \%rax\n", file);
-            fputs("    pop \%rcx\n", file);
-            fputs("    imul \%rcx, \%rax\n", file);
+            fputs("    pop \%r10\n", file);
+            fputs("    imul \%r10, \%rax\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -343,7 +372,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         
         case DIVISION:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
             fputs("    mov \%eax, \%eax\n", file);
             fputs("    cdq\n", file);
@@ -388,8 +417,8 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         case ADDITION:
             root->visited = true;
             fputs("    pop \%rax\n", file);
-            fputs("    pop \%rcx\n", file);
-            fputs("    add \%rcx, \%rax\n", file);
+            fputs("    pop \%r10\n", file);
+            fputs("    add \%r10, \%rax\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -401,9 +430,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         
         case SUBTRACTION:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    sub \%rcx, \%rax\n", file);
+            fputs("    sub \%r10, \%rax\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -445,9 +474,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         
         case LESS_THAN:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    cmp \%rcx, \%rax\n    mov $0, \%rax\n    setl \%al\n", file);
+            fputs("    cmp \%r10, \%rax\n    mov $0, \%rax\n    setl \%al\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -459,9 +488,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         
         case LESS_THAN_OR_EQUAL:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    cmp \%rcx, \%rax\n    mov $0, \%rax\n    setle \%al\n", file);
+            fputs("    cmp \%r10, \%rax\n    mov $0, \%rax\n    setle \%al\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -473,9 +502,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
 
         case GREATER_THAN:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    cmp \%rcx, \%rax\n    mov $0, \%rax\n    setg \%al\n", file);
+            fputs("    cmp \%r10, \%rax\n    mov $0, \%rax\n    setg \%al\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -487,9 +516,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
 
         case GREATER_THAN_OR_EQUAL:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    cmp \%rcx, \%rax\n    mov $0, \%rax\n    setge \%al\n", file);
+            fputs("    cmp \%r10, \%rax\n    mov $0, \%rax\n    setge \%al\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -529,9 +558,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
 
         case NOT_EQUAL:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    cmp \%rax, \%rcx\n    mov $0, \%rax\n    setne \%al\n", file);
+            fputs("    cmp \%rax, \%r10\n    mov $0, \%rax\n    setne \%al\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -543,9 +572,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         
         case EQUAL:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    cmp \%rax, \%rcx\n    mov $0, \%rax\n    sete \%al\n", file);
+            fputs("    cmp \%rax, \%r10\n    mov $0, \%rax\n    sete \%al\n", file);
             fputs("    pushq \%rax\n", file);
             if (root->sibling->sibling != NULL){
                 generate_code(root->sibling->sibling->sibling, file, local_variable_map);
@@ -593,9 +622,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
 
         case AND:
             root->visited = true;
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    pushq \%rcx\n", file);
+            fputs("    pushq \%r10\n", file);
             
             fputs("_skip_and_", file);
             and_jumpee_count++;
@@ -649,9 +678,9 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         case OR:
             root->visited = true;
 
-            fputs("    pop \%rcx\n", file);
+            fputs("    pop \%r10\n", file);
             fputs("    pop \%rax\n", file);
-            fputs("    pushq \%rcx\n", file);
+            fputs("    pushq \%r10\n", file);
 
             fputs("_skip_or_", file);
             or_jumpee_count++;
@@ -778,11 +807,38 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
 
         case EXPRESSION:
             if (root->visited && root->root->token.type == FUNCTION_CALL){
-                if (root->sibling->token.type == COMMA){
-                    generate_code(root->sibling->sibling, file, local_variable_map);
+                counter = 0;
+                while (root->past_sibling->token.type != OPEN_PARENTHESES){
+                    root = root->past_sibling;
+                    counter++;
+                }
+                int parameter_number = 0;
+                if (counter>0){
+                    parameter_number = (counter+1)/2+1; 
+                }
+                for (int i = 0; i < counter; i++){
+                    root = root->sibling;
+                }
+                if (parameter_number > 4){
+                    generate_code(root->past_sibling->past_sibling, file, local_variable_map);
                 }
                 else{
-                    generate_code(root->root, file, local_variable_map);
+                    if (parameter_number == 4){
+                        fputs("    pop \%r9\n", file);
+                        generate_code(root->past_sibling->past_sibling, file, local_variable_map);
+                    }
+                    else if (parameter_number == 3){
+                        fputs("    pop \%r8\n", file);
+                        generate_code(root->past_sibling->past_sibling, file, local_variable_map);
+                    }
+                    else if (parameter_number == 2){
+                        fputs("    pop \%rdx\n", file);
+                        generate_code(root->past_sibling->past_sibling, file, local_variable_map);
+                    }
+                    else{
+                        fputs("    pop \%rcx\n", file);
+                        generate_code(root->root, file, local_variable_map);
+                    }
                 }
             }
             else if (root->root->token.type == EXPRESSION_OPTION && !root->root->visited && root->root->sibling != NULL && root->root->sibling->token.type != COLON){
@@ -1011,7 +1067,19 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         }
                     }
                     else{
-                        printf("%s", "Variable already declared");
+                        printf("%s", "Variable \'");
+                        name = variable_name;
+                        while (name.pointer != NULL){
+                            printf("%c", name.character);
+                            name = *name.pointer;
+                        }
+                        printf("%c", name.character);
+                        printf("%s", "\' already declared");
+                        printf("%s", " [Ln ");
+                        printf("%i", root->token.line_index);
+                        printf("%s", ", Col ");
+                        printf("%i", root->token.character_index);
+                        printf("%s", "]\n");
                         break;
                     }
                 }
@@ -1049,7 +1117,12 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 }
             }
             if (temp->root->root == NULL){
-                printf("%S", "Cannot have break outside a loop");
+                printf("%s", "Cannot have a break outside a loop \'");
+                printf("%s", " [Ln ");
+                printf("%i", root->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->token.character_index);
+                printf("%s", "]\n");
                 break;
             }
             if (temp->root->root->child->token.type == WHILE_KEYWORD){
@@ -1087,7 +1160,12 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 }
             }
             if (temp->root->root == NULL){
-                printf("%S", "Cannot have break outside a loop");
+                printf("%s", "Cannot have break outside a loop");
+                printf("%s", " [Ln ");
+                printf("%i", root->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->token.character_index);
+                printf("%s", "]\n");
                 break;
             }
             if (temp->root->root->child->token.type == WHILE_KEYWORD){
@@ -1114,7 +1192,40 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             break;
         
         case STATEMENT:
-            if (root->child->token.type == FOR_KEYWORD){
+            if (root->child == NULL){
+                root->visited = true;
+                if (root->past_sibling != NULL && root->past_sibling->token.type != DO_KEYWORD && root->past_sibling->past_sibling->past_sibling->past_sibling->token.type == IF_KEYWORD){
+                    if (root->sibling != NULL && root->sibling->token.type == ELSE_KEYWORD){
+                        fputs("    jmp _if_end_", file);
+                        sprintf(number_string, "%d", else_count);
+                        fputs(number_string, file);
+                        fputs("\n", file);
+                        fputs("_else_", file);
+                        sprintf(number_string, "%d", else_count);
+                        fputs(number_string, file);
+                        fputs(":\n", file);
+                        generate_code(root->sibling->sibling, file, local_variable_map);
+                    }
+                    else{
+                        fputs("_else_", file);
+                        sprintf(number_string, "%d", else_count);
+                        fputs(number_string, file);
+                        fputs(":\n", file);
+                        generate_code(root->root, file, local_variable_map);
+                    }
+                }
+                else if (root->past_sibling != NULL && root->past_sibling->token.type == ELSE_KEYWORD){
+                    fputs("_if_end_", file);
+                    sprintf(number_string, "%d", else_count);
+                    fputs(number_string, file);
+                    fputs(":\n", file);
+                    generate_code(root->root, file, local_variable_map);
+                }
+                else{
+                    generate_code(root->root, file, local_variable_map);
+                }
+            }
+            else if (root->child->token.type == FOR_KEYWORD){
                 if ((root->child->sibling->sibling->token.type == DECLARATION && root->child->sibling->sibling->sibling->sibling->sibling->visited)||(root->child->sibling->sibling->token.type != DECLARATION && root->child->sibling->sibling->sibling->sibling->sibling->sibling->visited)){
                     fputs("_for_end_", file);
                     sprintf(number_string, "%d", for_count);
@@ -1296,19 +1407,10 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             }
             else if (root->visited){
                 if (root->child->token.type == RETURN_KEYWORD){
-                    int new_map_counter = pop_stack(map_counter_stack);
                     function_returned = true;
                     fputs("    pop \%rax\n", file);
-                    local_variable local;
-                    local.index = 0;
-                    local.declared_in_block = false;
-                    for (int j = map_counter; j>new_map_counter; j--){
-                        for (int i = 0; i<local_variable_count; i++){
-                            local_variable_maps[j][i] = local;
-                        }
-                    }
-
-                    for (int i = 0; i<map_counter-new_map_counter; i++){
+                    
+                    for (int i = 0; i<map_counter; i++){
                         fputs("    add $", file);
                         sprintf(number_string, "%d", local_variable_byte_count);
                         fputs(number_string, file);
@@ -1318,16 +1420,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         fputs(number_string, file);
                         fputs(", \%rbp\n", file);
                     }
-
-                    map_counter = new_map_counter;
                     
-                    current_local_variable_byte_count = 0;
-                    current_local_variable_count = 0;
-                    while (local_variable_maps[map_counter-1][current_local_variable_count].index != 0){
-                        current_local_variable_count++;
-                        current_local_variable_byte_count+=8;
-                    }
-
                     fputs("    mov \%rbp, \%rsp\n", file);
                     fputs("    pop \%rbp\n", file);
                     fputs("    ret\n", file);
@@ -1397,24 +1490,24 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                     generate_code(root->sibling, file, local_variable_map);
                 }
                 else{
-                    if (root->child->child->token.type != RETURN_KEYWORD){
-                        local_variable local;
-                        local.index = 0;
-                        local.declared_in_block = false;
-                        for (int i = 0; i<local_variable_count; i++){
-                            local_variable_maps[map_counter][i] = local;
-                        }
-                        current_local_variable_byte_count = 0;
-                        current_local_variable_count = 0;
-                        while (local_variable_maps[map_counter-1][current_local_variable_count].index != 0){
-                            current_local_variable_count++;
-                            current_local_variable_byte_count+=8;
-                        }
-                        map_counter--;
-                        else_count/=10;
-                        for_count/=10;
-                        while_count/=10;
-                        do_while_count/=10;
+                    local_variable local;
+                    local.index = 0;
+                    local.declared_in_block = false;
+                    for (int i = 0; i<local_variable_count; i++){
+                        local_variable_maps[map_counter][i] = local;
+                    }
+                    current_local_variable_byte_count = 0;
+                    current_local_variable_count = 0;
+                    while (local_variable_maps[map_counter-1][current_local_variable_count].index != 0){
+                        current_local_variable_count++;
+                        current_local_variable_byte_count+=8;
+                    }
+                    map_counter--;
+                    else_count/=10;
+                    for_count/=10;
+                    while_count/=10;
+                    do_while_count/=10;
+                    if (root->child->child != NULL && root->child->child->token.type != RETURN_KEYWORD){
                         fputs("    add $", file);
                         sprintf(number_string, "%d", local_variable_byte_count);
                         fputs(number_string, file);
@@ -1424,11 +1517,15 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         fputs(number_string, file);
                         fputs(", \%rbp\n", file);
                     }
-                    else{
-                        else_count/=10;
-                        for_count/=10;
-                        while_count/=10;
-                        do_while_count/=10;
+                    else if (root->child->child == NULL){
+                        fputs("    add $", file);
+                        sprintf(number_string, "%d", local_variable_byte_count);
+                        fputs(number_string, file);
+                        fputs(", \%rsp\n", file);
+                        fputs("    add $", file);
+                        sprintf(number_string, "%d", local_variable_byte_count);
+                        fputs(number_string, file);
+                        fputs(", \%rbp\n", file);
                     }
                     generate_code(root->root, file, local_variable_maps[map_counter]);
                 }
@@ -1452,24 +1549,66 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                     sprintf(number_string, "%d", local_variable_byte_count);
                     fputs(number_string, file);
                     fputs(", \%rbp\n", file);
-                    for (int i = 0; i < current_local_variable_count; i++){
-                        if (local_variable_map[i].index != 0){
-                            fputs("    mov ", file);
-                            sprintf(number_string, "%d", -(local_variable_map[i].index-local_variable_byte_count));
-                            fputs(number_string, file);
-                            fputs("(\%rbp), ", file);
-                            fputs("\%rax\n", file);
-                            fputs("    mov \%rax, ", file);
-                            sprintf(number_string, "%d", -(local_variable_map[i].index));
-                            fputs(number_string, file);
-                            fputs("(\%rbp)\n", file);
+                    current_local_variable_byte_count += local_variable_byte_count_to_add;
+                    current_local_variable_count += local_variable_count_to_add;
+                    local_variable_map = local_variable_maps[map_counter];
+                    if (root->root->token.type == FUNCTION){
+                        for (int i = 0; i < current_local_variable_count; i++){
+                            if (i > 3){
+                                fputs("    mov ", file);
+                                sprintf(number_string, "%d", (local_variable_map[i].index)+local_variable_byte_count+8);
+                                fputs(number_string, file);
+                                fputs("(\%rbp), ", file);
+                                fputs("\%rax\n", file);
+                                fputs("    mov \%rax, ", file);
+                                sprintf(number_string, "%d", -(local_variable_map[i].index));
+                                fputs(number_string, file);
+                                fputs("(\%rbp)\n", file);
+                            }
+                            else if (i == 3){
+                                fputs("    mov \%r9, ", file);
+                                sprintf(number_string, "%d", -(local_variable_map[i].index));
+                                fputs(number_string, file);
+                                fputs("(\%rbp)\n", file);
+                            }
+                            else if (i == 2){
+                                fputs("    mov \%r8, ", file);
+                                sprintf(number_string, "%d", -(local_variable_map[i].index));
+                                fputs(number_string, file);
+                                fputs("(\%rbp)\n", file);
+                            }
+                            else if (i == 1){
+                                fputs("    mov \%rdx, ", file);
+                                sprintf(number_string, "%d", -(local_variable_map[i].index));
+                                fputs(number_string, file);
+                                fputs("(\%rbp)\n", file);
+                            }
+                            else{
+                                fputs("    mov \%rcx, ", file);
+                                sprintf(number_string, "%d", -(local_variable_map[i].index));
+                                fputs(number_string, file);
+                                fputs("(\%rbp)\n", file);
+                            }
                         }
                     }
+                    else{
+                        for (int i = 0; i < current_local_variable_count; i++){
+                            if (local_variable_map[i].index != 0){
+                                fputs("    mov ", file);
+                                sprintf(number_string, "%d", -(local_variable_map[i].index-local_variable_byte_count));
+                                fputs(number_string, file);
+                                fputs("(\%rbp), ", file);
+                                fputs("\%rax\n", file);
+                                fputs("    mov \%rax, ", file);
+                                sprintf(number_string, "%d", -(local_variable_map[i].index));
+                                fputs(number_string, file);
+                                fputs("(\%rbp)\n", file);
+                            }
+                        }
+                    }
+                    local_variable_byte_count_to_add = 0;
+                    local_variable_count_to_add = 0;
                 }
-                current_local_variable_byte_count += local_variable_byte_count_to_add;
-                local_variable_byte_count_to_add = 0;
-                current_local_variable_count += local_variable_count_to_add;
-                local_variable_count_to_add = 0;
                 root->visited = true;
                 generate_code(root->child, file, local_variable_maps[map_counter]);
             }
@@ -1583,7 +1722,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 while (root->token.type != CLOSED_PARENTHESES){
                     local_variable parameter;
                     parameter.declared_in_block = true;
-                    parameter.index = -8-local_variable_byte_count_to_add;
+                    parameter.index = 8+local_variable_byte_count_to_add;
                     local_variable_byte_count_to_add+=8;
                     parameter.token_name = root->token.name;
                     local_variable_maps[map_counter+1][current_local_variable_count+local_variable_count_to_add] = parameter;
@@ -1624,7 +1763,6 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
 
 
 int main(){
-    map_counter_stack.head = 0;
     FILE *file_pointer;
     file_pointer = fopen("file.txt", "r");
     tkn_list *token_list = typify_tokens(get_tokens(file_pointer));

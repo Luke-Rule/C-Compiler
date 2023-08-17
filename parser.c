@@ -160,22 +160,19 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
     switch (symbol)
     {
         case PROGRAM_SYMBOL:
-            node = initialise_child(root, function);
-            return_value = parse(token_list, FUNCTION_SYMBOL, node);
-            if (!return_value.valid){
+            if (token_list!=NULL && token_list->pointer == NULL && token_list->token.type!=SEMICOLON){
                 printf("%s", "Invalid token order [Ln ");
-                printf("%i", return_value.token_list->token.line_index);
+                printf("%i", token_list->token.line_index);
                 printf("%s", ", Col ");
-                printf("%i", return_value.token_list->token.character_index);
+                printf("%i", token_list->token.character_index);
                 printf("%s", "]\n");
                 return_value.token_list = token_list;
                 return_value.valid = false;
                 return return_value;
                 break;
             }
-            token_list = return_value.token_list;
-            while (token_list->pointer != NULL){ 
-                node = initialise_sibling(node, function);
+            if (token_list->pointer != NULL && token_list->pointer->pointer != NULL && token_list->pointer->pointer->token.type == OPEN_PARENTHESES){
+                node = initialise_child(root, function);
                 return_value = parse(token_list, FUNCTION_SYMBOL, node);
                 if (!return_value.valid){
                     printf("%s", "Invalid token order [Ln ");
@@ -189,6 +186,56 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                     break;
                 }
                 token_list = return_value.token_list;
+            }
+            else if (token_list->pointer != NULL){
+                node = initialise_child(root, declaration);
+                return_value = parse(token_list, DECLARATION_SYMBOL, node);
+                if (!return_value.valid){
+                    printf("%s", "Invalid token order [Ln ");
+                    printf("%i", return_value.token_list->token.line_index);
+                    printf("%s", ", Col ");
+                    printf("%i", return_value.token_list->token.character_index);
+                    printf("%s", "]\n");
+                    return_value.token_list = token_list;
+                    return_value.valid = false;
+                    return return_value;
+                    break;
+                }
+                token_list = return_value.token_list;
+            }
+            while (token_list->pointer != NULL){ 
+                if (token_list->pointer->pointer != NULL && token_list->pointer->pointer->token.type == OPEN_PARENTHESES){
+                    node = initialise_sibling(node, function);
+                    return_value = parse(token_list, FUNCTION_SYMBOL, node);
+                    if (!return_value.valid){
+                        printf("%s", "Invalid token order [Ln ");
+                        printf("%i", return_value.token_list->token.line_index);
+                        printf("%s", ", Col ");
+                        printf("%i", return_value.token_list->token.character_index);
+                        printf("%s", "]\n");
+                        return_value.token_list = token_list;
+                        return_value.valid = false;
+                        return return_value;
+                        break;
+                    }
+                    token_list = return_value.token_list;
+                }
+                else{
+                    node = initialise_sibling(node, declaration);
+                    return_value = parse(token_list, DECLARATION_SYMBOL, node);
+                    if (!return_value.valid){
+                        printf("%s", "Invalid token order [Ln ");
+                        printf("%i", return_value.token_list->token.line_index);
+                        printf("%s", ", Col ");
+                        printf("%i", return_value.token_list->token.character_index);
+                        printf("%s", "]\n");
+                        return_value.token_list = token_list;
+                        return_value.valid = false;
+                        return return_value;
+                        break;
+                    }
+                    token_list = return_value.token_list;
+                }
             }
             return_value.token_list = return_value.token_list;
             return_value.valid = true;
@@ -343,6 +390,25 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                     if (token_list->token.type == ASSIGNMENT){
                         node = initialise_sibling(node, token_list->token);
                         token_list = token_list->pointer;
+                        if (token_list->pointer->token.type != SEMICOLON && node->root->token.type == PROGRAM){
+                            str variable_name = node->past_sibling->token.name;
+                            printf("%s", "Global variable \'");
+                            while (variable_name.pointer != NULL){
+                                printf("%c", variable_name.character);
+                                variable_name = *variable_name.pointer;
+                            }
+                            printf("%c", variable_name.character);
+                            printf("%s", "\' initialised with expression, must be integer only");
+                            printf("%s", " [Ln ");
+                            printf("%i", root->token.line_index);
+                            printf("%s", ", Col ");
+                            printf("%i", root->token.character_index);
+                            printf("%s", "]\n");
+                            return_value.token_list = token_list;
+                            return_value.valid = false;
+                            return return_value;
+                            break;
+                        }
                         node = initialise_sibling(node, expression);
                         expression_return = parse(token_list, EXPRESSION_SYMBOL, node);
                         if (expression_return.valid){

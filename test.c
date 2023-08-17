@@ -1,3 +1,3 @@
 int main(){
-    getchar(1);
+    return 0;
 } 

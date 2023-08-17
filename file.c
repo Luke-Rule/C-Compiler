@@ -1,5 +1,4 @@
-int a(int c, int i, int h, int g, int f, int e, int d);
-
+int g = 7*9+4;
 int main() {
-    a(72,1,2,3,4,5,6);
+    return 0;
 }

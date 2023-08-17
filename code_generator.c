@@ -13,6 +13,7 @@ int local_variable_byte_count_to_add = 0;
 int local_variable_count_to_add = 0;
 char number_string[10000];
 
+
 typedef struct function{
     str function_name;
     int index;
@@ -28,7 +29,15 @@ typedef struct local_variable{
     bool declared_in_block;
 } local_variable;
 
+typedef struct global_variable{
+    str variable_name;
+    bool defined;
+} global_variable;
+
 bool function_returned = false;
+
+global_variable global_variables[10000];
+int global_variable_count = 0;
 
 int current_local_variable_count = 0;
 int current_local_variable_byte_count = 0;
@@ -54,13 +63,46 @@ void add_to_local_variable_map(str name, local_variable local_variable_map[1000]
     current_local_variable_count++;
 }
 
+void add_global_variable(str name){
+    global_variable variable;
+    variable.variable_name = name;
+    variable.defined = false;
+    global_variables[global_variable_count] = variable;
+    global_variable_count++;
+}
+
+bool is_global_variable_declared(str name){
+    for (int i = 0; i < global_variable_count; i++){
+        if (is_name_equal(name, global_variables[i].variable_name)){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_global_variable_defined(str name){
+    for (int i = 0; i < global_variable_count; i++){
+        if (is_name_equal(name, global_variables[i].variable_name)){
+            return global_variables[i].defined;
+        }
+    }
+    return false;
+}
+
+void set_global_variable_as_defined(str name){
+    for (int i = 0; i < global_variable_count; i++){
+        if (is_name_equal(name, global_variables[i].variable_name)){
+            global_variables[i].defined = true;
+        }
+    }
+}
+
 void set_declared_in_local_variable_map(str name, local_variable local_variable_map[1000]){
     for (int i = 0; i < current_local_variable_count; i++){
         if (is_name_equal(name, local_variable_map[i].token_name)){
             local_variable_map[i].declared_in_block = true;
         }
     }
-    
 }
 
 bool is_in_local_variable_map(str name, local_variable local_variable_map[1000]){
@@ -137,20 +179,21 @@ bool is_function_declaration_valid(str name, int number_of_parameters){
     return false;
 }
 
-
 void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000]){
     switch (root->token.type){
         case INT_LITERAL:
             root->visited = true;
-            fputs("    mov $", file);
             str name = root->token.name;
-            while (name.pointer != NULL){
+            if (root->root->root->root->root->root->root->root->root->root->root->root->token.type != PROGRAM){
+                fputs("    mov $", file);
+                while (name.pointer != NULL){
+                    fputc(name.character, file);
+                    name = *name.pointer;
+                }
                 fputc(name.character, file);
-                name = *name.pointer;
+                fputs(", \%rax\n", file);
+                fputs("    pushq \%rax\n", file);
             }
-            fputc(name.character, file);
-            fputs(", \%rax\n", file);
-            fputs("    pushq \%rax\n", file);
             root = root->root;
             if (root->past_sibling != NULL && (root->past_sibling->token.type == NEGATION | root->past_sibling->token.type == LOGICAL_NEGATION | root->past_sibling->token.type == BITWISE_COMPLEMENT)){
                 generate_code(root->past_sibling, file, local_variable_map);
@@ -180,6 +223,25 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             }
             else if (root->past_sibling != NULL && root->past_sibling->token.type == INT_KEYWORD){
                 generate_code(root->root, file, local_variable_map);
+            }
+            else if (is_global_variable_declared(name)){
+                root->visited = true;
+                fputs("    mov ", file);
+                while (name.pointer != NULL){
+                    fputc(name.character, file);
+                    name = *name.pointer;
+                }
+                fputc(name.character, file);  
+                fputs(", \%rax\n", file);
+                fputs("    pushq \%rax\n", file);
+                
+                root = root->root;
+                if (root->past_sibling != NULL && (root->past_sibling->token.type == NEGATION | root->past_sibling->token.type == LOGICAL_NEGATION | root->past_sibling->token.type == BITWISE_COMPLEMENT)){
+                    generate_code(root->past_sibling, file, local_variable_map);
+                }
+                else{
+                    generate_code(root, file, local_variable_map);
+                }
             }
             else{
                 printf("%s", "Variable \'");
@@ -961,6 +1023,20 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         }
                         generate_code(root->root->root, file, local_variable_map);
                     }
+                    if (is_global_variable_declared(name)){
+                        fputs("    pop \%rax\n", file);
+                        if (root->root->past_sibling->past_sibling->past_sibling != NULL){
+                            fputs("    pushq \%rax\n", file);
+                        }
+                        fputs("    mov \%rax, ", file);
+                        while (name.pointer != NULL){
+                            fputc(name.character, file);
+                            name = *name.pointer;
+                        }
+                        fputc(name.character, file);
+                        fputs("\n", file);
+                        generate_code(root->root->root, file, local_variable_map);
+                    }
                     else if (root->root->past_sibling != NULL && root->root->past_sibling->past_sibling != NULL && (root->root->past_sibling->past_sibling->token.type == IF_KEYWORD | (root->root->past_sibling->past_sibling->past_sibling != NULL && root->root->past_sibling->past_sibling->past_sibling->token.type == INT_KEYWORD))){
                         generate_code(root->root->root, file, local_variable_map);
                     }
@@ -1019,6 +1095,20 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         }
                         generate_code(root->root, file, local_variable_map);
                     }
+                    if (is_global_variable_declared(name)){
+                        fputs("    pop \%rax\n", file);
+                        if (root->past_sibling->past_sibling->past_sibling != NULL){
+                            fputs("    pushq \%rax\n", file);
+                        }
+                        fputs("    mov \%rax, ", file);
+                        while (name.pointer != NULL){
+                            fputc(name.character, file);
+                            name = *name.pointer;
+                        }
+                        fputc(name.character, file);
+                        fputs("\n", file);
+                        generate_code(root->root, file, local_variable_map);
+                    }
                     else if (root->past_sibling != NULL && root->past_sibling->past_sibling != NULL && (root->past_sibling->past_sibling->token.type == IF_KEYWORD || (root->past_sibling->past_sibling->past_sibling != NULL && root->past_sibling->past_sibling->past_sibling->token.type == INT_KEYWORD))){
                         generate_code(root->root, file, local_variable_map);
                     }
@@ -1044,49 +1134,96 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             if (root->visited){
                 if (root->child->token.type == INT_KEYWORD){
                     str variable_name = root->child->sibling->token.name;
-                    if (!is_declared_in_local_variable_map(variable_name, local_variable_map)){
-                        if (!is_in_local_variable_map(variable_name, local_variable_map)){
-                            add_to_local_variable_map(variable_name, local_variable_map);
+                    if (root->root->token.type == PROGRAM){
+                        if (!is_global_variable_declared(variable_name) && !is_function_declared(variable_name)){
+                            add_global_variable(variable_name);
+                            if (root->child->sibling->sibling->token.type == ASSIGNMENT){
+                                set_global_variable_as_defined(variable_name);
+                                str temp = variable_name;
+                                fputs("    .globl ", file);
+                                while (variable_name.pointer != NULL){
+                                    fputc(variable_name.character, file);
+                                    variable_name = *variable_name.pointer;
+                                }
+                                fputc(variable_name.character, file);
+                                fputs("\n", file);
+                                variable_name = temp;
+                                while (variable_name.pointer != NULL){
+                                    fputc(variable_name.character, file);
+                                    variable_name = *variable_name.pointer;
+                                }
+                                fputc(variable_name.character, file);
+                                fputs(":\n", file);
+                                fputs("    .long ", file);
+                                str value = root->child->sibling->sibling->sibling->child->child->child->child->child->child->child->child->child->token.name;
+                                while (value.pointer != NULL){
+                                    fputc(value.character, file);
+                                    value = *value.pointer;
+                                }
+                                fputc(value.character, file);
+                                fputs("\n", file);
+                            }
                         }
                         else{
-                            set_declared_in_local_variable_map(variable_name, local_variable_map);
-                        }
-                        if (root->child->sibling->sibling->token.type == ASSIGNMENT){
-                            fputs("    pop \%rax\n", file);
-                            fputs("    mov \%rax, ", file);
-                            sprintf(number_string, "%d", get_local_variable_index(variable_name, local_variable_map));
-                            fputs(number_string, file);
-                            fputs("(\%rbp)\n", file);
-                        }
-                        else{
-                            fputs("    mov $0, \%rax\n", file);
-                            fputs("    mov \%rax, ", file);
-                            sprintf(number_string, "%d", get_local_variable_index(variable_name, local_variable_map));
-                            fputs(number_string, file);
-                            fputs("(\%rbp)\n", file);
+                            printf("%s", "\'");
+                            name = variable_name;
+                            while (name.pointer != NULL){
+                                printf("%c", name.character);
+                                name = *name.pointer;
+                            }
+                            printf("%c", name.character);
+                            printf("%s", "\' already declared");
+                            printf("%s", " [Ln ");
+                            printf("%i", root->token.line_index);
+                            printf("%s", ", Col ");
+                            printf("%i", root->token.character_index);
+                            printf("%s", "]\n");
+                            break;
                         }
                     }
                     else{
-                        printf("%s", "Variable \'");
-                        name = variable_name;
-                        while (name.pointer != NULL){
-                            printf("%c", name.character);
-                            name = *name.pointer;
+                        if (!is_declared_in_local_variable_map(variable_name, local_variable_map)){
+                            if (!is_in_local_variable_map(variable_name, local_variable_map)){
+                                add_to_local_variable_map(variable_name, local_variable_map);
+                            }
+                            else{
+                                set_declared_in_local_variable_map(variable_name, local_variable_map);
+                            }
+                            if (root->child->sibling->sibling->token.type == ASSIGNMENT){
+                                fputs("    pop \%rax\n", file);
+                                fputs("    mov \%rax, ", file);
+                                sprintf(number_string, "%d", get_local_variable_index(variable_name, local_variable_map));
+                                fputs(number_string, file);
+                                fputs("(\%rbp)\n", file);
+                            }
+                            else{
+                                fputs("    mov $0, \%rax\n", file);
+                                fputs("    mov \%rax, ", file);
+                                sprintf(number_string, "%d", get_local_variable_index(variable_name, local_variable_map));
+                                fputs(number_string, file);
+                                fputs("(\%rbp)\n", file);
+                            }
                         }
-                        printf("%c", name.character);
-                        printf("%s", "\' already declared");
-                        printf("%s", " [Ln ");
-                        printf("%i", root->token.line_index);
-                        printf("%s", ", Col ");
-                        printf("%i", root->token.character_index);
-                        printf("%s", "]\n");
-                        break;
+                        else{
+                            printf("%s", "Variable \'");
+                            name = variable_name;
+                            while (name.pointer != NULL){
+                                printf("%c", name.character);
+                                name = *name.pointer;
+                            }
+                            printf("%c", name.character);
+                            printf("%s", "\' already declared");
+                            printf("%s", " [Ln ");
+                            printf("%i", root->token.line_index);
+                            printf("%s", ", Col ");
+                            printf("%i", root->token.character_index);
+                            printf("%s", "]\n");
+                            break;
+                        }
                     }
+                    
                 }
-                if (root->root->child->token.type == FOR_KEYWORD){
-                    generate_code(root->root, file, local_variable_map);
-                }
-                else{
+                if (!root->root->token.type == PROGRAM){
                     generate_code(root->root, file, local_variable_map);
                 }
             }
@@ -1556,7 +1693,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         for (int i = 0; i < current_local_variable_count; i++){
                             if (i > 3){
                                 fputs("    mov ", file);
-                                sprintf(number_string, "%d", (local_variable_map[i].index)+local_variable_byte_count+8);
+                                sprintf(number_string, "%d", (local_variable_map[i].index)+local_variable_byte_count+8-4*8);
                                 fputs(number_string, file);
                                 fputs("(\%rbp), ", file);
                                 fputs("\%rax\n", file);
@@ -1721,7 +1858,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 }
                 while (root->token.type != CLOSED_PARENTHESES){
                     local_variable parameter;
-                    parameter.declared_in_block = true;
+                    parameter.declared_in_block = false;
                     parameter.index = 8+local_variable_byte_count_to_add;
                     local_variable_byte_count_to_add+=8;
                     parameter.token_name = root->token.name;
@@ -1749,10 +1886,49 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 fputs("    mov $0, \%rax\n", file);
                 fputs("    ret\n", file);
             }
-            if (root->sibling != NULL){
-                generate_code(root->sibling, file, local_variable_map);
+            break;
+        
+        case PROGRAM:
+            if (root->child != NULL){
+                fputs("   .data\n", file);
+                root = root->child;
+                while (root->sibling != NULL){
+                    if (root->token.type == DECLARATION){
+                        generate_code(root, file, local_variable_map);
+                    }
+                    root = root->sibling;
+                }
+                if (root->child->token.type == DECLARATION){
+                    generate_code(root, file, local_variable_map);
+                }
+                while (root->past_sibling != NULL){
+                    root = root->past_sibling;
+                }
+                fputs("   .bss\n", file);
+                for (int i = 0; i < global_variable_count; i++){
+                    if (!global_variables[i].defined){
+                        str name = global_variables[i].variable_name;
+                        while (name.pointer != NULL){
+                            fputc(name.character, file);
+                            name = *name.pointer;
+                        }
+                        fputc(name.character, file);   
+                        fputs(":\n.zero 8\n", file);
+                    }
+                }
+                fputs("   .text\n", file);
+                while (root->sibling != NULL){
+                    if (root->token.type == FUNCTION){
+                        generate_code(root, file, local_variable_map);
+                    }
+                    root = root->sibling;
+                }
+                if (root->token.type == FUNCTION){
+                    generate_code(root, file, local_variable_map);
+                }
             }
             break;
+
         
         default:
             printf("%s", "Compiler error");
@@ -1781,7 +1957,6 @@ int main(){
         printf("%s", "Syntax valid\n");
         FILE *file;
         file = fopen("assembly.s", "w");
-        root = root->child;
         generate_code(root, file, local_variable_maps[0]);
         fclose(file);
     }

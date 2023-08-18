@@ -1223,7 +1223,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                     }
                     
                 }
-                if (!root->root->token.type == PROGRAM){
+                if (root->root->token.type != PROGRAM){
                     generate_code(root->root, file, local_variable_map);
                 }
             }

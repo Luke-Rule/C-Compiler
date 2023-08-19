@@ -1023,7 +1023,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         }
                         generate_code(root->root->root, file, local_variable_map);
                     }
-                    if (is_global_variable_declared(name)){
+                    else if (is_global_variable_declared(name)){
                         fputs("    pop \%rax\n", file);
                         if (root->root->past_sibling->past_sibling->past_sibling != NULL){
                             fputs("    pushq \%rax\n", file);
@@ -1131,7 +1131,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             break; 
         
         case DECLARATION:
-            if (root->visited){
+            if (root->visited || root->child->sibling->sibling->token.type == SEMICOLON){
                 if (root->child->token.type == INT_KEYWORD){
                     str variable_name = root->child->sibling->token.name;
                     if (root->root->token.type == PROGRAM){

@@ -2,20 +2,20 @@
 
 A Compiler from C to x86 GCC-8.1.0 64-bit assembly, written in C.
 
-<H2>About</H2>
-A simple C compiler based on the grammar and implementation timeline from the blog series [Writing a C Compiler](https://norasandler.com/2017/11/29/Write-a-Compiler.html/) by Nora Sandler, wrapped in a web editor which translates C code entered and in turn runs the newly translated assembly and shows its output and return value. 
+## About
+A simple C compiler based on the grammar and implementation timeline from the blog series [Writing a C Compiler](https://norasandler.com/2017/11/29/Write-a-Compiler.html/) by Nora Sandler, which can be used via a web editor which translates C code entered, displays the assembly created, runs the assembly and shows its output and return value. 
 
 It supports a basic subset of C:
-⋅⋅* Functions
-⋅⋅* Loops
-⋅⋅* If statements
-⋅⋅* Many types of unary and binary arithmetic and logical operators
-⋅⋅* With only 1 type, int
+* Functions.
+* Loops.
+* If statements.
+* Many types of unary and binary arithmetic and logical operators.
+* With int as its only current type.
 
 <H2>Usage</H2>
-Clone files into a local server (I used XAMPP) and open index.php. (Requires GCC) (This was written for windows and may not work on other OS)
+Clone files into a local server (e.g. XAMPP) and open index.php (Requires GCC) (This was written for windows and may not work on other OS).
 
-<H2>Grammar</H2>
+## Grammar
 ```
 <program> ::= { <function> | <declaration> }
 <function> ::= "int" <id> "(" ")" "{" { <block-item> } "}"
@@ -45,7 +45,7 @@ Clone files into a local server (I used XAMPP) and open index.php. (Requires GCC
 ```
 _Note I also added the ability to use common increment operators (++,*=, etc) by modifying their tokens in the lexing stage_
 
-<H2>Timeline</H2>
+## Implementation imeline
 1. Integers and basic Main structure.
 2. Unary operators.
 3. Binary arithmetic operators.

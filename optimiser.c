@@ -57,7 +57,7 @@ void optimise(){
             }
         }
         if (lines[i][0] == 'm' && lines[i][1] == 'o' && lines[i][2] == 'v' && lines[i][3] == ' ' && lines[i][4] == '%' && lines[i][5] == 'r' && lines[i][6] == 'a' && lines[i][7] == 'x'){
-            if (lines[i+1][0] == 'm' && lines[i+1][1] == 'o' && lines[i+1][2] == 'v' && lines[i+1][3] == ' ' && lines[i+1][length-3] == 'r' && lines[i+1][length-1] == 'a' && lines[i+1][length-2] == 'x' && lines[i][9] == lines[i+1][4] && lines[i][10] == lines[i+1][5]){
+            if (lines[i+1][0] == 'm' && lines[i+1][1] == 'o' && lines[i+1][2] == 'v' && lines[i+1][3] == ' ' && lines[i+1][length-3] == 'r' && lines[i+1][length-2] == 'a' && lines[i+1][length-1] == 'x' && lines[i][10] == lines[i+1][4] && lines[i][11] == lines[i+1][5] && lines[i][12] == lines[i+1][6] && lines[i][13] == lines[i+1][7]){
                 fputc(' ', file_write);
                 fputc(' ', file_write);
                 fputc(' ', file_write);

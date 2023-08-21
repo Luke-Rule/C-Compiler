@@ -1,9 +1,13 @@
-
-int fib(int v){
-    return a;
+int sum(int k);
+int putint(int k);
+int main() {
+  return sum(10);
 }
-int a = 5;
-int main(){
-    a= 9;
-    return fib(3, 2);
+
+int sum(int k) {
+  if (k > 0) {
+    return k + sum(k - 1);
+  } else {
+    return 0;
+  }
 }

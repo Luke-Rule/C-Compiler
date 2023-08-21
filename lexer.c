@@ -7,6 +7,8 @@ typedef struct str{
     char character;
     struct str *pointer;
 } str;
+char number_string[10000];
+FILE *file;
 
 typedef enum token_type{
     OPEN_BRACE,
@@ -85,6 +87,16 @@ typedef struct tkn_return{
     FILE *file_pointer;
 } tkn_return;
 
+bool is_valid_char(char character){
+    char valid_chars[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','_','1','2','3','4','5','6','7','8','9','0'};
+    for (int i = 0; i<26*2+11; i++){
+        if (character==valid_chars[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
 void append_string(str *string, char character){
     while (string->pointer != NULL){
         string = string->pointer;
@@ -130,7 +142,7 @@ bool is_ending_token(char character){
 }
 
 bool is_ending_token_exc_comparators(char character){
-    char ending_tokens[] = {'(', ')', '{', '}', ';', '-', '~', '+', '/', '*', ','};
+    char ending_tokens[] = {'(', ')', '{', '}', ';', '~', ',', '-', '+', '*', '/'};
     for (int i = 0; i<11; i++){
         if (character==ending_tokens[i]){
             return true;
@@ -166,6 +178,7 @@ tkn_return get_next_token(FILE *file_pointer){
     char character;
     char last_character;
     bool end = false;
+    bool post = false;
     str *token_string;
     token_string = (str *)malloc(sizeof(str));
     token_string->pointer = NULL;
@@ -180,11 +193,29 @@ tkn_return get_next_token(FILE *file_pointer){
         }
         character=fgetc(file_pointer);
     }
-    if (is_ending_token_exc_comparators(character)){
+    if (is_valid_char(last_character) && (character == '+' || character == '-' || character == '/' || character == '*')){
+        char temp = last_character;
+        last_character = character;
+        character=fgetc(file_pointer);
+        character_number++;
+        if ((last_character == '+' && character == '+') || (last_character == '-' && character == '-') || character == '='){
+            end = true;
+            append_string(token_string, last_character);
+            append_string(token_string, character);
+            post = true;
+        }
+        else{
+            character_number--;
+            character = last_character;
+            last_character = temp;
+            fseek(file_pointer, -1, SEEK_CUR);
+        }
+    }
+    if (!post && is_ending_token_exc_comparators(character)){
         end = true;
         append_string(token_string, character);
     }
-    while (character != EOF & character != ' ' & character != '\n' & !end){
+    while (character != EOF & character != ' ' & character != '\n' & !end & !post){
         append_string(token_string, character);
         last_character = character;
         character_number++;
@@ -223,44 +254,123 @@ tkn_return get_next_token(FILE *file_pointer){
 }
 
 tkn_list* get_tokens(FILE *file_pointer){
+    file = fopen("assembly.s", "w");
     tkn_list *token_list;
     token_list = (tkn_list *)malloc(sizeof(tkn_list));
     token_list->pointer = NULL;
+    tkn last_token;
+    tkn new_token;
+    last_token.name.character = '?';
     tkn_return token_return = get_next_token(file_pointer);
     while (!token_return.end_of_file){
-        append_token(token_list, token_return.token);
+        if (last_token.name.character != '?' && token_return.token.name.character == '+' && token_return.token.name.pointer != NULL && token_return.token.name.pointer->character == '+'){
+            new_token.name.character = '=';
+            new_token.name.pointer = NULL;
+            append_token(token_list, new_token);
+            append_token(token_list, last_token);
+            append_token(token_list, token_return.token);
+            new_token.name.character = '1';
+            new_token.name.pointer = NULL;
+            append_token(token_list, new_token);
+        }
+        else if (last_token.name.character != '?' && token_return.token.name.character == '-' && token_return.token.name.pointer != NULL &&token_return.token.name.pointer->character == '-'){
+            new_token.name.character = '=';
+            new_token.name.pointer = NULL;
+            append_token(token_list, new_token);
+            append_token(token_list, last_token);
+            append_token(token_list, token_return.token);
+            new_token.name.character = '1';
+            new_token.name.pointer = NULL;
+            append_token(token_list, new_token);
+        }
+        else if (last_token.name.character != '?' && token_return.token.name.character == '+' &&token_return.token.name.pointer != NULL && token_return.token.name.pointer->character == '='){
+            new_token.name.character = '=';
+            new_token.name.pointer = NULL;
+            append_token(token_list, new_token);
+            append_token(token_list, last_token);
+            append_token(token_list, token_return.token);
+        }
+        else if (last_token.name.character != '?' && token_return.token.name.character == '-' && token_return.token.name.pointer != NULL &&token_return.token.name.pointer->character == '='){
+            new_token.name.character = '=';
+            new_token.name.pointer = NULL;
+            append_token(token_list, new_token);
+            append_token(token_list, last_token);
+            append_token(token_list, token_return.token);
+        }
+        else if (last_token.name.character != '?' && token_return.token.name.character == '*' && token_return.token.name.pointer != NULL &&token_return.token.name.pointer->character == '='){
+            new_token.name.character = '=';
+            new_token.name.pointer = NULL;
+            append_token(token_list, new_token);
+            append_token(token_list, last_token);
+            append_token(token_list, token_return.token);
+        }
+        else if (last_token.name.character != '?' && token_return.token.name.character == '/' &&token_return.token.name.pointer != NULL && token_return.token.name.pointer->character == '='){
+            new_token.name.character = '=';
+            new_token.name.pointer = NULL;
+            append_token(token_list, new_token);
+            append_token(token_list, last_token);
+            append_token(token_list, token_return.token);
+        }
+        else{
+            append_token(token_list, token_return.token);
+        }
+        last_token = token_return.token;
         file_pointer = token_return.file_pointer;
         token_return = get_next_token(file_pointer);
     }
-    append_token(token_list, token_return.token);
+    if (last_token.name.character != '?' && token_return.token.name.character == '+' && token_return.token.name.pointer != NULL &&token_return.token.name.pointer->character == '+'){
+        new_token.name.character = '=';
+        new_token.name.pointer = NULL;
+        append_token(token_list, new_token);
+        append_token(token_list, last_token);
+        append_token(token_list, token_return.token);
+        new_token.name.character = '1';
+        new_token.name.pointer = NULL;
+        append_token(token_list, new_token);
+    }
+    else if (last_token.name.character != '?' && token_return.token.name.character == '-' && token_return.token.name.pointer != NULL &&token_return.token.name.pointer->character == '-'){
+        new_token.name.character = '=';
+        new_token.name.pointer = NULL;
+        append_token(token_list, new_token);
+        append_token(token_list, last_token);
+        append_token(token_list, token_return.token);
+        new_token.name.character = '1';
+        new_token.name.pointer = NULL;
+        append_token(token_list, new_token);
+    }
+    else if (last_token.name.character != '?' && token_return.token.name.character == '+' &&token_return.token.name.pointer != NULL && token_return.token.name.pointer->character == '='){
+        new_token.name.character = '=';
+        new_token.name.pointer = NULL;
+        append_token(token_list, new_token);
+        append_token(token_list, last_token);
+        append_token(token_list, token_return.token);
+    }
+    else if (last_token.name.character != '?' && token_return.token.name.character == '-' &&token_return.token.name.pointer != NULL && token_return.token.name.pointer->character == '='){
+        new_token.name.character = '=';
+        new_token.name.pointer = NULL;
+        append_token(token_list, new_token);
+        append_token(token_list, last_token);
+        append_token(token_list, token_return.token);
+    }
+    else if (last_token.name.character != '?' && token_return.token.name.character == '*' && token_return.token.name.pointer != NULL &&token_return.token.name.pointer->character == '='){
+        new_token.name.character = '=';
+        new_token.name.pointer = NULL;
+        append_token(token_list, new_token);
+        append_token(token_list, last_token);
+        append_token(token_list, token_return.token);
+    }
+    else if (last_token.name.character != '?' && token_return.token.name.character == '/' && token_return.token.name.pointer != NULL &&token_return.token.name.pointer->character == '='){
+        new_token.name.character = '=';
+        new_token.name.pointer = NULL;
+        append_token(token_list, new_token);
+        append_token(token_list, last_token);
+        append_token(token_list, token_return.token);
+    }
+    else{
+        append_token(token_list, token_return.token);
+    }
     fclose(file_pointer);
     return token_list->pointer;
-}
-
-void print_token(tkn token){
-    str *token_string = &token.name;
-    while (token_string != NULL){
-        printf("%c", token_string->character);
-        token_string = token_string->pointer;
-    }
-    printf("%c", ' ');
-}
-
-void print_tokens(tkn_list *token_list){
-    while (token_list != NULL){
-        print_token(token_list->token);
-        token_list = token_list->pointer;
-    }
-}
-
-bool is_valid_char(char character){
-    char valid_chars[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','_','1','2','3','4','5','6','7','8','9','0'};
-    for (int i = 0; i<26*2+11; i++){
-        if (character==valid_chars[i]){
-            return true;
-        }
-    }
-    return false;
 }
 
 tkn_type typify_token(tkn *token, tkn *previous){
@@ -307,7 +417,7 @@ tkn_type typify_token(tkn *token, tkn *previous){
             break;
 
         case '-':
-            if (previous->type == INT_LITERAL | previous->type == IDENTIFIER){
+            if (previous->type == INT_LITERAL | previous->type == IDENTIFIER | previous->type == CLOSED_PARENTHESES){
                 return SUBTRACTION;
             }
             return NEGATION;
@@ -328,17 +438,20 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer == NULL){
                 return LOGICAL_NEGATION;
             }
-            printf("%c", '\'');
+            
+            fputc( '\'', file);
             while (name.pointer != NULL){
-                printf("%c", name.character);
+                fputc( name.character, file);
                 name = *name.pointer;
             }
-            printf("%c", name.character);
-            printf("%s", "\' invalid token [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            fputc( name.character, file);
+            fputs( "\' invalid token [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
             break;
 
@@ -358,17 +471,19 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer != NULL && name.pointer->character == '&' && name.pointer->pointer == NULL){
                 return AND;
             }
-            printf("%c", '\'');
+            fputc( '\'', file);
             while (name.pointer != NULL){
-                printf("%c", name.character);
+                fputc( name.character, file);
                 name = *name.pointer;
             }
-            printf("%c", name.character);
-            printf("%s", "\' invalid token [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            fputc( name.character, file);
+            fputs( "\' invalid token [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
             break;
 
@@ -376,17 +491,19 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer != NULL && name.pointer->character == '|' && name.pointer->pointer == NULL){
                 return OR;
             }
-            printf("%c", '\'');
+            fputc( '\'', file);
             while (name.pointer != NULL){
-                printf("%c", name.character);
+                fputc( name.character, file);
                 name = *name.pointer;
             }
-            printf("%c", name.character);
-            printf("%s", "\' invalid token [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            fputc( name.character, file);
+            fputs( "\' invalid token [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
             break;
 
@@ -397,17 +514,19 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer == NULL){
                 return ASSIGNMENT;
             }
-            printf("%c", '\'');
+            fputc( '\'', file);
             while (name.pointer != NULL){
-                printf("%c", name.character);
+                fputc( name.character, file);
                 name = *name.pointer;
             }
-            printf("%c", name.character);
-            printf("%s", "\' invalid token [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            fputc( name.character, file);
+            fputs( "\' invalid token [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
             break;
 
@@ -418,17 +537,20 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer == NULL){
                 return LESS_THAN;
             }
-            printf("%c", '\'');
+            
+            fputc( '\'', file);
             while (name.pointer != NULL){
-                printf("%c", name.character);
+                fputc( name.character, file);
                 name = *name.pointer;
             }
-            printf("%c", name.character);
-            printf("%s", "\' invalid token [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            fputc( name.character, file);
+            fputs( "\' invalid token [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
             break;
 
@@ -439,17 +561,20 @@ tkn_type typify_token(tkn *token, tkn *previous){
             if (name.pointer == NULL){
                 return GREATER_THAN;
             }
-            printf("%c", '\'');
+            
+            fputc( '\'', file);
             while (name.pointer != NULL){
-                printf("%c", name.character);
+                fputc( name.character, file);
                 name = *name.pointer;
             }
-            printf("%c", name.character);
-            printf("%s", "\' invalid token [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            fputc( name.character, file);
+            fputs( "\' invalid token [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
             break;
 
@@ -679,101 +804,122 @@ tkn_type typify_token(tkn *token, tkn *previous){
     if (isdigit(name.character)){
         while (name.pointer != NULL){
             if (!isdigit(name.character)){
-                printf("%s", "Invalid suffix \'");
+            
+                fputs( "Invalid suffix \'", file);
                 while (name.pointer != NULL){
-                    printf("%c", name.character);
+                    fputc( name.character, file);
                     name = *name.pointer;
                 }
-                printf("%c", name.character);
-                printf("%s", "\' on integer constant");
-                printf("%s", " [Ln ");
-                printf("%i", token->line_index);
-                printf("%s", ", Col ");
-                printf("%i", token->character_index);
-                printf("%s", "]\n");
+                fputc( name.character, file);
+                fputs( "\' on integer constant", file);
+                fputs( " [Ln ", file);
+                sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+                fputs( ", Col ", file);
+                sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+                fputs( "]\n", file);
                 return INVALID;
             }
             if (!is_valid_char(name.character)){
-                printf("%c", '\'');
-                printf("%c", name.character);
-                printf("%s", "\' invalid character");
-                printf("%s", " [Ln ");
-                printf("%i", token->line_index);
-                printf("%s", ", Col ");
-                printf("%i", token->character_index);
-                printf("%s", "]\n");
+            
+                fputc( '\'', file);
+                fputc( name.character, file);
+                fputs( "\' invalid character", file);
+                fputs( " [Ln ", file);
+                sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+                fputs( ", Col ", file);
+                sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+                fputs( "]\n", file);
                 return INVALID;
             }
             name = *name.pointer;
         }
         if (!isdigit(name.character)){
-            printf("%s", "Invalid suffix \'");
+            
+            fputs( "Invalid suffix \'", file);
             while (name.pointer != NULL){
-                printf("%c", name.character);
+                fputc( name.character, file);
                 name = *name.pointer;
             }
-            printf("%c", name.character);
-            printf("%s", "\' on integer constant");
-            printf("%s", " [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            fputc( name.character, file);
+            fputs( "\' on integer constant", file);
+            fputs( " [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
         }
         if (!is_valid_char(name.character)){
-            printf("%c", '\'');
-            printf("%c", name.character);
-            printf("%s", "\' invalid character");
-            printf("%s", " [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            
+            fputc( '\'', file);
+            fputc( name.character, file);
+            fputs( "\' invalid character", file);
+            fputs( " [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
         }
         return INT_LITERAL;
     }
     else{
         while (name.pointer != NULL){
+            
             if (!is_valid_char(name.character)){
-                printf("%c", '\'');
-                printf("%c", name.character);
-                printf("%s", "\' invalid character");
-                printf("%s", " [Ln ");
-                printf("%i", token->line_index);
-                printf("%s", ", Col ");
-                printf("%i", token->character_index);
-                printf("%s", "]\n");
+                fputc( '\'', file);
+                fputc( name.character, file);
+                fputs( "\' invalid character", file);
+                fputs( " [Ln ", file);
+                sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+                fputs( ", Col ", file);
+                sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+                fputs( "]\n", file);
                 return INVALID;
             }
             name = *name.pointer;
         }
         if (!is_valid_char(name.character)){
-            printf("%c", '\'');
-            printf("%c", name.character);
-            printf("%s", "\' invalid character");
-            printf("%s", " [Ln ");
-            printf("%i", token->line_index);
-            printf("%s", ", Col ");
-            printf("%i", token->character_index);
-            printf("%s", "]\n");
+            
+            fputc( '\'', file);
+            fputc( name.character, file);
+            fputs( "\' invalid character", file);
+            fputs( " [Ln ", file);
+            sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+            fputs( ", Col ", file);
+            sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+            fputs( "]\n", file);
             return INVALID;
         }
         return IDENTIFIER;
     }
-    printf("%c", '\'');
+            
+    fputc( '\'', file);
     while (name.pointer != NULL){
-        printf("%c", name.character);
+        fputc( name.character, file);
         name = *name.pointer;
     }
-    printf("%c", name.character);
-    printf("%s", "\' invalid token");
-    printf("%s", " [Ln ");
-    printf("%i", token->line_index);
-    printf("%s", ", Col ");
-    printf("%i", token->character_index);
-    printf("%s", "]\n");
+    fputc( name.character, file);
+    fputs( "\' invalid token", file);
+    fputs( " [Ln ", file);
+    sprintf(number_string, "%d",token->line_index);
+    fputs(number_string, file);
+    fputs( ", Col ", file);
+    sprintf(number_string, "%d",token->character_index);
+    fputs(number_string, file);
+    fputs( "]\n", file);
     return INVALID;
 }
 
@@ -787,39 +933,6 @@ tkn_list* typify_tokens(tkn_list *token_list){
         tkn_list *temp_list;
         token = &token_list->token;
         token->type = typify_token(token, previous);
-        if (open>0 && previous->type==ELSE_KEYWORD && token->type!=IF_KEYWORD && typify_token(&token_list->pointer->token, previous)!=IF_KEYWORD){
-            found = true;
-        }
-        if (token->type == CLOSED_BRACE && found){
-            found = false;
-            for (int i = 0; i<open;i++){
-                tkn_list* new_node = (tkn_list*)malloc(sizeof(tkn_list));
-                tkn new_token;
-                new_token.type = CLOSED_BRACE;
-                new_node->token = new_token;
-                str string;
-                string.character = '}';
-                string.pointer = NULL;
-                new_token.name = string;
-                new_node->pointer = token_list->pointer;
-                token_list->pointer = new_node;
-                token_list = token_list->pointer;
-            }
-            open = 0;
-        }
-        if (token->type == ELSE_KEYWORD && typify_token(&token_list->pointer->token, token)==IF_KEYWORD){
-            open++;
-            tkn_list* new_node = (tkn_list*)malloc(sizeof(tkn_list));
-            tkn new_token;
-            new_token.type = OPEN_BRACE;
-            str string;
-            string.character = '{';
-            string.pointer = NULL;    
-            new_token.name = string;
-            new_node->token = new_token;
-            new_node->pointer = token_list->pointer;
-            token_list->pointer = new_node;
-        }
         token = &token_list->token;
         token_list = token_list->pointer;
     }

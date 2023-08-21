@@ -1,13 +1,14 @@
-int sum(int k);
-int putint(int k);
-int main() {
-  return sum(10);
+int a = 0;
+int b;
+int fib(int n) {
+    if (n == 0 || n == 1) {
+        return n;
+    } else {
+        return fib(n - 1) + fib(n - 2);
+    }
 }
 
-int sum(int k) {
-  if (k > 0) {
-    return k + sum(k - 1);
-  } else {
-    return 0;
-  }
+int main() {
+    int n = 10;
+    return fib(n);
 }

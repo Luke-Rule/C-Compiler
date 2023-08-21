@@ -25,6 +25,10 @@ void optimise(){
                     fputc(' ', file_write);
                     fputc(' ', file_write);
                     fputc(' ', file_write);
+                    fputc(' ', file_write);
+                    fputc(' ', file_write);
+                    fputc(' ', file_write);
+                    fputc(' ', file_write);
                     for (int j = 0; j < length; j++){
                         fputc(lines[i][j], file_write);
                     }
@@ -37,6 +41,10 @@ void optimise(){
         if (lines[i][0] == 'p' && lines[i][1] == 'u' && lines[i][2] == 's' && lines[i][3] == 'h' && lines[i][4] == 'q' && lines[i][5] == ' ' && lines[i][6] == '%' && lines[i][7] == 'r' && lines[i][8] == 'a' && lines[i][9] == 'x'){
             if (lines[i+1][0] == 'p' && lines[i+1][1] == 'o' && lines[i+1][2] == 'p' && lines[i+1][3] == ' ' && lines[i+1][4] == '%' && lines[i+1][5] == 'r' && lines[i+1][6] == 'a' && lines[i+1][7] == 'x'){
                 if (lines[i+2][0] == 'p' && lines[i+2][1] == 'u' && lines[i+2][2] == 's' && lines[i+2][3] == 'h' && lines[i+2][4] == 'q' && lines[i+2][5] == ' ' && lines[i+2][6] == '%' && lines[i+2][7] == 'r' && lines[i+2][8] == 'a' && lines[i+2][9] == 'x'){
+                    fputc(' ', file_write);
+                    fputc(' ', file_write);
+                    fputc(' ', file_write);
+                    fputc(' ', file_write);
                     fputc(' ', file_write);
                     fputc(' ', file_write);
                     fputc(' ', file_write);
@@ -62,6 +70,10 @@ void optimise(){
                 fputc(' ', file_write);
                 fputc(' ', file_write);
                 fputc(' ', file_write);
+                fputc(' ', file_write);
+                fputc(' ', file_write);
+                fputc(' ', file_write);
+                fputc(' ', file_write);
                 for (int j = 0; j < length; j++){
                     fputc(lines[i][j], file_write);
                 }
@@ -77,13 +89,26 @@ void optimise(){
             skip = true;
         }
         if (!skip){
-            if (lines[i][0] != '_'){
+            if (lines[i][0] != '.'){
                 fputc(' ', file_write);
                 fputc(' ', file_write);
                 fputc(' ', file_write);
                 fputc(' ', file_write);
             }
-            if (lines[i][0] == '.' && (lines[i][1] == 'l' || lines[i][1] == 'z')){
+            if (lines[i][0] != '.' && lines[i][length-1] != ':'){
+                fputc(' ', file_write);
+                fputc(' ', file_write);
+                fputc(' ', file_write);
+                fputc(' ', file_write);
+            }
+            if (lines[i][1] == 'g' && i>0 && lines[i-1][0] != '.'){
+                fputc('\n', file_write);
+            }
+            if (lines[i][1] == 'l' || lines[i][1] == 'z'){
+                fputc(' ', file_write);
+                fputc(' ', file_write);
+                fputc(' ', file_write);
+                fputc(' ', file_write);
                 fputc(' ', file_write);
                 fputc(' ', file_write);
                 fputc(' ', file_write);

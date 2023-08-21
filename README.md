@@ -3,7 +3,7 @@
 A Compiler from C to x86 GCC-8.1.0 64-bit assembly, written in C.
 
 <H2>About</H2>
-A simple C compiler based on the grammar and implementation timeline from the blog series [Writing a C Compiler]("https://norasandler.com/2017/11/29/Write-a-Compiler.html") by Nora Sandler, wrapped in a web editor which translates C code entered and in turn runs the newly translated assembly and shows its output and return value. 
+A simple C compiler based on the grammar and implementation timeline from the blog series [Writing a C Compiler](https://norasandler.com/2017/11/29/Write-a-Compiler.html) by Nora Sandler, wrapped in a web editor which translates C code entered and in turn runs the newly translated assembly and shows its output and return value. 
 
 It supports a basic subset of C:
 ⋅⋅* Functions

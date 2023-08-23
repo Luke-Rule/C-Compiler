@@ -1136,7 +1136,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         
         case DECLARATION:
             conditional_count+=10;
-            if (root->visited || root->child->sibling->sibling->token.type == SEMICOLON){
+            if (root->visited || root->child->sibling->sibling->token.type == SEMICOLON || root->root->token.type == PROGRAM){
                 if (root->child->token.type == INT_KEYWORD){
                     str variable_name = root->child->sibling->token.name;
                     if (root->root->token.type == PROGRAM){

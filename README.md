@@ -10,11 +10,15 @@ It supports a basic subset of C:
 * Loops.
 * If statements.
 * Many types of unary and binary arithmetic and logical operators.
-* With int as its only current type.
+* Int type.
+* Single file programs.
 * Calls to C's standard library can also be made, providing you add a declaration of the function being used in your program and that the functions return and parameter types are ints (e.g. putchar).
 
-<H2>Usage</H2>
-Clone files into a local server (e.g. XAMPP) and open index.php (Requires GCC) (This was written for windows and may not work on other OS).
+## Usage
+### Web version
+Clone branch "main" into a local server (e.g. XAMPP) and open index.php (Requires GCC to run the assembly) (This was written for windows and may not work on other OS).
+### Console version
+Clone branch "console-version". Write your C code into "file.txt", then run code_generator.exe and the assembly will be written to "assembly.s". If you wish to run this assembly, enter "gcc assembly.s -o out", then run "out.exe" (Requires GCC).
 
 ## Grammar
 ```

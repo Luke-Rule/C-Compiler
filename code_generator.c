@@ -1154,7 +1154,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
         
         case DECLARATION:
             conditional_count+=10;
-            if (root->visited || root->child->sibling->sibling->token.type == SEMICOLON){
+            if (root->visited || root->child->sibling->sibling->token.type == SEMICOLON || root->root->token.type == PROGRAM){
                 if (root->child->token.type == INT_KEYWORD){
                     str variable_name = root->child->sibling->token.name;
                     if (root->root->token.type == PROGRAM){
@@ -1188,7 +1188,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                             }
                         }
                         else{
-                freopen("assembly_unoptimised.s", "w", file);
+                            freopen("assembly_unoptimised.s", "w", file);
                             fputs( "\'", file);
                             name = variable_name;
                             while (name.pointer != NULL){
@@ -1199,10 +1199,10 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                             fputs( "\' already declared", file);
                             fputs( " [Ln ", file);
                             sprintf(number_string, "%d",  root->child->sibling->token.line_index);
-                fputs(number_string, file);
+                            fputs(number_string, file);
                             fputs( ", Col ", file);
                             sprintf(number_string, "%d",  root->child->sibling->token.character_index);
-                fputs(number_string, file);
+                            fputs(number_string, file);
                             fputs( "]\n", file); fclose(file);
                             break;
                         }

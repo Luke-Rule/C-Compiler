@@ -151,14 +151,11 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
         case PROGRAM_SYMBOL:
             file = fopen("assembly.s", "w");
             if (token_list!=NULL && token_list->pointer == NULL && token_list->token.type!=SEMICOLON){
-                
-                fputs("Invalid token order [Ln ", file);
-                sprintf(number_string, "%d",   token_list->token.line_index);
-                fputs(number_string, file);
-                fputs(", Col ", file);
-                sprintf(number_string, "%d",   token_list->token.character_index);
-                fputs(number_string, file);
-                fputs("]\n", file);
+                printf("%s", "Invalid token order [Ln ");
+                printf("%i", token_list->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", token_list->token.character_index);
+                printf("%s", "]\n");
                 return_value.token_list = token_list;
                 return_value.valid = false;
                 return return_value;
@@ -168,14 +165,11 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                 node = initialise_child(root, function);
                 return_value = parse(token_list, FUNCTION_SYMBOL, node);
                 if (!return_value.valid){
-                
-                    fputs("Invalid token order [Ln ", file);
-                    sprintf(number_string, "%d",   return_value.token_list->token.line_index);
-                fputs(number_string, file);
-                    fputs(", Col ", file);
-                    sprintf(number_string, "%d",   return_value.token_list->token.character_index);
-                fputs(number_string, file);
-                    fputs("]\n", file);
+                    printf("%s", "Invalid token order [Ln ");
+                    printf("%i", return_value.token_list->token.line_index);
+                    printf("%s", ", Col ");
+                    printf("%i", return_value.token_list->token.character_index);
+                    printf("%s", "]\n");
                     return_value.token_list = token_list;
                     return_value.valid = false;
                     return return_value;
@@ -187,14 +181,11 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                 node = initialise_child(root, declaration);
                 return_value = parse(token_list, DECLARATION_SYMBOL, node);
                 if (!return_value.valid){
-                
-                    fputs("Invalid token order [Ln ", file);
-                    sprintf(number_string, "%d",   return_value.token_list->token.line_index);
-                fputs(number_string, file);
-                    fputs(", Col ", file);
-                    sprintf(number_string, "%d",   return_value.token_list->token.character_index);
-                fputs(number_string, file);
-                    fputs("]\n", file);
+                    printf("%s", "Invalid token order [Ln ");
+                    printf("%i", return_value.token_list->token.line_index);
+                    printf("%s", ", Col ");
+                    printf("%i", return_value.token_list->token.character_index);
+                    printf("%s", "]\n");
                     return_value.token_list = token_list;
                     return_value.valid = false;
                     return return_value;
@@ -207,14 +198,11 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                     node = initialise_sibling(node, function);
                     return_value = parse(token_list, FUNCTION_SYMBOL, node);
                     if (!return_value.valid){
-                
-                        fputs("Invalid token order [Ln ", file);
-                        sprintf(number_string, "%d",   return_value.token_list->token.line_index);
-                fputs(number_string, file);
-                        fputs(", Col ", file);
-                        sprintf(number_string, "%d",   return_value.token_list->token.character_index);
-                fputs(number_string, file);
-                        fputs("]\n", file);
+                        printf("%s", "Invalid token order [Ln ");
+                        printf("%i", return_value.token_list->token.line_index);
+                        printf("%s", ", Col ");
+                        printf("%i", return_value.token_list->token.character_index);
+                        printf("%s", "]\n");
                         return_value.token_list = token_list;
                         return_value.valid = false;
                         return return_value;
@@ -226,14 +214,11 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                     node = initialise_sibling(node, declaration);
                     return_value = parse(token_list, DECLARATION_SYMBOL, node);
                     if (!return_value.valid){
-                
-                        fputs("Invalid token order [Ln ", file);
-                        sprintf(number_string, "%d",   return_value.token_list->token.line_index);
-                fputs(number_string, file);
-                        fputs(", Col ", file);
-                        sprintf(number_string, "%d",   return_value.token_list->token.character_index);
-                fputs(number_string, file);
-                        fputs("]\n", file);
+                        printf("%s", "Invalid token order [Ln ");
+                        printf("%i", return_value.token_list->token.line_index);
+                        printf("%s", ", Col ");
+                        printf("%i", return_value.token_list->token.character_index);
+                        printf("%s", "]\n");
                         return_value.token_list = token_list;
                         return_value.valid = false;
                         return return_value;
@@ -397,22 +382,18 @@ parse_return parse(tkn_list *token_list, non_terminal symbol, ast *root){
                         token_list = token_list->pointer;
                         if (token_list->pointer->token.type != SEMICOLON && root->root->token.type == PROGRAM){
                             str variable_name = node->past_sibling->token.name;
-                            
-                            fputs("Global variable \'", file);
+                            printf("%s", "Global variable \'");
                             while (variable_name.pointer != NULL){
-                                fputc(variable_name.character, file);
+                                printf("%c", variable_name.character);
                                 variable_name = *variable_name.pointer;
                             }
-                            fputc(variable_name.character, file);
-                            fputs("\' initialised with expression, must be integer only", file);
-                            fputs(" [Ln ", file);
-                            sprintf(number_string, "%d",   root->token.line_index);
-                fputs(number_string, file);
-                            fputs(", Col ", file);
-                            sprintf(number_string, "%d",   root->token.character_index);
-                fputs(number_string, file);
-                            fputs("]\n", file);
-                            fclose(file);
+                            printf("%c", variable_name.character);
+                            printf("%s", "\' initialised with expression, must be integer only");
+                            printf("%s", " [Ln ");
+                            printf("%i", root->token.line_index);
+                            printf("%s", ", Col ");
+                            printf("%i", root->token.character_index);
+                            printf("%s", "]\n");
                             return_value.token_list = token_list;
                             return_value.valid = false;
                             return return_value;

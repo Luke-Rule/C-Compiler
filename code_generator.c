@@ -247,21 +247,18 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 }
             }
             else{
-                freopen("assembly_unoptimised.s", "w", file);
-                fputs( "Variable \'", file);
+                printf("%s", "Variable \'");
                 while (name.pointer != NULL){
-                    fputc( name.character, file);
+                    printf("%c", name.character);
                     name = *name.pointer;
                 }
-                fputc( name.character, file);   
-                fputs( "\' undeclared", file);
-                fputs( " [Ln ", file);
-                sprintf(number_string, "%d",  root->token.line_index);
-                fputs(number_string, file);
-                fputs( ", Col ", file);
-                sprintf(number_string, "%d",  root->token.character_index);
-                fputs(number_string, file);
-                fputs( "]\n", file); fclose(file);
+                printf("%c", name.character);   
+                printf("%s", "\' undeclared");
+                printf("%s", " [Ln ");
+                printf("%i", root->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->token.character_index);
+                printf("%s", "]\n");
             }
             break;
         
@@ -308,21 +305,18 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             root->visited = true;
             if (!is_function_declared(root->child->token.name)){
                 str name = root->child->token.name;
-                freopen("assembly_unoptimised.s", "w", file);
-                fputs( "Reference to undeclared function \'", file);
+                printf("%s", "Reference to undeclared function \'");
                 while (name.pointer != NULL){
-                    fputc( name.character, file);
+                    printf("%c", name.character);
                     name = *name.pointer;
                 }
-                fputc( name.character, file);
-                fputs( "\' ", file);
-                fputs( " [Ln ", file);
-                sprintf(number_string, "%d",  root->child->token.line_index);
-                fputs(number_string, file);
-                fputs( ", Col ", file);
-                sprintf(number_string, "%d",  root->child->token.character_index);
-                fputs(number_string, file);
-                fputs( "]\n", file); fclose(file);
+                printf("%c", name.character);
+                printf("%s", "\' ");
+                printf("%s", " [Ln ");
+                printf("%i", root->child->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->child->token.character_index);
+                printf("%s", "]\n");
                 break;
             }
             int counter = 0;
@@ -340,39 +334,33 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             root = root->root;
             if (get_number_of_parameters(root->child->token.name) < number_of_parameters){
                 str name = root->child->token.name;
-                freopen("assembly_unoptimised.s", "w", file);
-                fputs( "Too many arguments in function call \'", file);
+                printf("%s", "Too many arguments in function call \'");
                 while (name.pointer != NULL){
-                    fputc( name.character, file);
+                    printf("%c", name.character);
                     name = *name.pointer;
                 }
-                fputc( name.character, file);
-                fputs( "\' ", file);
-                fputs( " [Ln ", file);
-                sprintf(number_string, "%d",  root->child->token.line_index);
-                fputs(number_string, file);
-                fputs( ", Col ", file);
-                sprintf(number_string, "%d",  root->child->token.character_index);
-                fputs(number_string, file);
-                fputs( "]\n", file); fclose(file);
+                printf("%c", name.character);
+                printf("%s", "\' ");
+                printf("%s", " [Ln ");
+                printf("%i", root->child->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->child->token.character_index);
+                printf("%s", "]\n");
             }
             else if (get_number_of_parameters(root->child->token.name) > number_of_parameters){
                 str name = root->child->token.name;
-                freopen("assembly_unoptimised.s", "w", file);
-                fputs( "Too few arguments in function call \'", file);
+                printf("%s", "Too few arguments in function call \'");
                 while (name.pointer != NULL){
-                    fputc( name.character, file);
+                    printf("%c", name.character);
                     name = *name.pointer;
                 }
-                fputc( name.character, file);
-                fputs( "\' ", file);
-                fputs( " [Ln ", file);
-                sprintf(number_string, "%d",  root->child->token.line_index);
-                fputs(number_string, file);
-                fputs( ", Col ", file);
-                sprintf(number_string, "%d",  root->child->token.character_index);
-                fputs(number_string, file);
-                fputs( "]\n", file); fclose(file);
+                printf("%c", name.character);
+                printf("%s", "\' ");
+                printf("%s", " [Ln ");
+                printf("%i", root->child->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->child->token.character_index);
+                printf("%s", "]\n");
             }
             else if (get_number_of_parameters(root->child->token.name)>0 && !root->child->sibling->sibling->visited){
                 root = root->child;
@@ -1072,21 +1060,18 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         generate_code(root->root->root, file, local_variable_map);
                     }
                     else{
-                        freopen("assembly_unoptimised.s", "w", file);
-                        fputs("Variable \'", file);
+                        printf("%s", "Variable \'");
                         while (name.pointer != NULL){
-                            fputc( name.character, file);
+                            printf("%c", name.character);
                             name = *name.pointer;
                         }
-                        fputc( name.character, file);
-                        fputs( "\' undeclared", file);
-                        fputs( " [Ln ", file);
-                        sprintf(number_string, "%d",  root->root->past_sibling->past_sibling->token.line_index);
-                fputs(number_string, file);
-                        fputs( ", Col ", file);
-                        sprintf(number_string, "%d",  root->root->past_sibling->past_sibling->token.character_index);
-                fputs(number_string, file);
-                        fputs( "]\n", file); fclose(file);
+                        printf("%c", name.character);
+                        printf("%s", "\' undeclared");
+                        printf("%s", " [Ln ");
+                        printf("%i", root->root->past_sibling->past_sibling->token.line_index);
+                        printf("%s", ", Col ");
+                        printf("%i", root->root->past_sibling->past_sibling->token.character_index);
+                        printf("%s", "]\n");
                     }
                 }
             }
@@ -1132,21 +1117,18 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                         generate_code(root->root, file, local_variable_map);
                     }
                     else{
-                freopen("assembly_unoptimised.s", "w", file);
-                        fputs( "Variable \'", file);
+                        printf("%s", "Variable \'");
                         while (name.pointer != NULL){
-                            fputc( name.character, file);
+                            printf("%c", name.character);
                             name = *name.pointer;
                         }
-                        fputc( name.character, file);
-                        fputs( "\' undeclared", file);
-                        fputs( " [Ln ", file);
-                        sprintf(number_string, "%d",  root->past_sibling->past_sibling->token.line_index);
-                fputs(number_string, file);
-                        fputs( ", Col ", file);
-                        sprintf(number_string, "%d",  root->past_sibling->past_sibling->token.character_index);
-                fputs(number_string, file);
-                        fputs( "]\n", file); fclose(file);
+                        printf("%c", name.character);
+                        printf("%s", "\' undeclared");
+                        printf("%s", " [Ln ");
+                        printf("%i", root->past_sibling->past_sibling->token.line_index);
+                        printf("%s", ", Col ");
+                        printf("%i", root->past_sibling->past_sibling->token.character_index);
+                        printf("%s", "]\n");
                     }
                 }
             }
@@ -1188,22 +1170,19 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                             }
                         }
                         else{
-                freopen("assembly_unoptimised.s", "w", file);
-                            fputs( "\'", file);
+                            printf("%s", "\'");
                             name = variable_name;
                             while (name.pointer != NULL){
-                                fputc( name.character, file);
+                                printf("%c", name.character);
                                 name = *name.pointer;
                             }
-                            fputc( name.character, file);
-                            fputs( "\' already declared", file);
-                            fputs( " [Ln ", file);
-                            sprintf(number_string, "%d",  root->child->sibling->token.line_index);
-                fputs(number_string, file);
-                            fputs( ", Col ", file);
-                            sprintf(number_string, "%d",  root->child->sibling->token.character_index);
-                fputs(number_string, file);
-                            fputs( "]\n", file); fclose(file);
+                            printf("%c", name.character);
+                            printf("%s", "\' already declared");
+                            printf("%s", " [Ln ");
+                            printf("%i", root->child->sibling->token.line_index);
+                            printf("%s", ", Col ");
+                            printf("%i", root->child->sibling->token.character_index);
+                            printf("%s", "]\n");
                             break;
                         }
                     }
@@ -1231,22 +1210,19 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                             }
                         }
                         else{
-                freopen("assembly_unoptimised.s", "w", file);
-                            fputs( "Variable \'", file);
+                            printf("%s", "Variable \'");
                             name = variable_name;
                             while (name.pointer != NULL){
-                                fputc( name.character, file);
+                                printf("%c", name.character);
                                 name = *name.pointer;
                             }
-                            fputc( name.character, file);
-                            fputs( "\' already declared", file);
-                            fputs( " [Ln ", file);
-                            sprintf(number_string, "%d",  root->child->sibling->token.line_index);
-                fputs(number_string, file);
-                            fputs( ", Col ", file);
-                            sprintf(number_string, "%d",  root->child->sibling->token.character_index);
-                fputs(number_string, file);
-                            fputs( "]\n", file); fclose(file);
+                            printf("%c", name.character);
+                            printf("%s", "\' already declared");
+                            printf("%s", " [Ln ");
+                            printf("%i", root->child->sibling->token.line_index);
+                            printf("%s", ", Col ");
+                            printf("%i", root->child->sibling->token.character_index);
+                            printf("%s", "]\n");
                             break;
                         }
                     }
@@ -1277,15 +1253,12 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 temp = temp->root;
             }
             if (temp->root->token.type == PROGRAM){
-                freopen("assembly_unoptimised.s", "w", file);
-                fputs( "Cannot have a break outside a loop", file);
-                fputs( " [Ln ", file);
-                sprintf(number_string, "%d",  root->token.line_index);
-                fputs(number_string, file);
-                fputs( ", Col ", file);
-                sprintf(number_string, "%d",  root->token.character_index);
-                fputs(number_string, file);
-                fputs( "]\n", file); fclose(file);
+                printf("%s", "Cannot have a break outside a loop");
+                printf("%s", " [Ln ");
+                printf("%i", root->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->token.character_index);
+                printf("%s", "]\n");
                 break;
             }
             if (temp->root->root->child->token.type == WHILE_KEYWORD){
@@ -1319,15 +1292,12 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 temp = temp->root;
             }
             if (temp->root->token.type == PROGRAM){
-                freopen("assembly_unoptimised.s", "w", file);
-                fputs( "Cannot have a continue outside a loop", file);
-                fputs( " [Ln ", file);
-                sprintf(number_string, "%d",  root->token.line_index);
-                fputs(number_string, file);
-                fputs( ", Col ", file);
-                sprintf(number_string, "%d",  root->token.character_index);
-                fputs(number_string, file);
-                fputs( "]\n", file); fclose(file);
+                printf("%s", "Cannot have a continue outside a loop");
+                printf("%s", " [Ln ");
+                printf("%i", root->token.line_index);
+                printf("%s", ", Col ");
+                printf("%i", root->token.character_index);
+                printf("%s", "]\n");
                 break;
             }
             if (temp->root->root->child->token.type == WHILE_KEYWORD){
@@ -1805,42 +1775,35 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                 root = root->root;
                 
                 if ((is_function_defined(name) && !function_is_prototype) || is_global_variable_declared(name, temp->token.line_index)){
-                    freopen("assembly_unoptimised.s", "w", file);
-                    fputs( "Redefinition of \'", file);
+                    printf("%s", "Redefinition of \'");
                     while (name.pointer != NULL){
-                        fputc( name.character, file);
+                        printf("%c", name.character);
                         name = *name.pointer;
                     }
-                    fputc( name.character, file);   
-                    fputs( "\'", file);
-                    fputs( " [Ln ", file);
-                    sprintf(number_string, "%d",  temp->token.line_index);
-                fputs(number_string, file);
-                    fputs( ", Col ", file);
-                    sprintf(number_string, "%d",  temp->token.character_index);
-                fputs(number_string, file);
-                    fputs( "]\n", file); fclose(file);
+                    printf("%c", name.character);   
+                    printf("%s", "\'");
+                    printf("%s", " [Ln ");
+                    printf("%i", temp->token.line_index);
+                    printf("%s", ", Col ");
+                    printf("%i", temp->token.character_index);
+                    printf("%s", "]\n");
                     break;
                 }
                 if (is_function_declared(name) && !is_function_declaration_valid(name, number_of_parameters)){
-                    freopen("assembly_unoptimised.s", "w", file);
-                    fputs( "Incorrect number of parameters (", file);
-                    sprintf(number_string, "%d",  number_of_parameters);
-                    fputs(number_string, file);
-                    fputs( ") for funtion \'", file);
+                    printf("%s", "Incorrect number of parameters (");
+                    printf("%i", number_of_parameters);
+                    printf("%s", ") for funtion \'");
                     while (name.pointer != NULL){
-                        fputc( name.character, file);
+                        printf("%c", name.character);
                         name = *name.pointer;
                     }
-                    fputc( name.character, file);   
-                    fputs( "\'", file);
-                    fputs( " [Ln ", file);
-                    sprintf(number_string, "%d",  temp->token.line_index);
-                    fputs(number_string, file);
-                    fputs( ", Col ", file);
-                    sprintf(number_string, "%d",  temp->token.character_index);
-                    fputs(number_string, file);
-                    fputs( "]\n", file); fclose(file);
+                    printf("%c", name.character);   
+                    printf("%s", "\'");
+                    printf("%s", " [Ln ");
+                    printf("%i", temp->token.line_index);
+                    printf("%s", ", Col ");
+                    printf("%i", temp->token.character_index);
+                    printf("%s", "]\n");
                     break;
                 }
 
@@ -1988,6 +1951,7 @@ int main(){
     parse_return return_value = parse(token_list, PROGRAM_SYMBOL, root);
     root = return_value.root;
     if (return_value.valid){
+        printf("%s", "Syntax valid\n");
         FILE *file;
         file = fopen("assembly_unoptimised.s", "w");
         generate_code(root, file, local_variable_maps[0]);

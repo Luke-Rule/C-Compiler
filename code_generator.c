@@ -1188,7 +1188,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                             }
                         }
                         else{
-                            freopen("assembly_unoptimised.s", "w", file);
+                freopen("assembly_unoptimised.s", "w", file);
                             fputs( "\'", file);
                             name = variable_name;
                             while (name.pointer != NULL){
@@ -1199,10 +1199,10 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
                             fputs( "\' already declared", file);
                             fputs( " [Ln ", file);
                             sprintf(number_string, "%d",  root->child->sibling->token.line_index);
-                            fputs(number_string, file);
+                fputs(number_string, file);
                             fputs( ", Col ", file);
                             sprintf(number_string, "%d",  root->child->sibling->token.character_index);
-                            fputs(number_string, file);
+                fputs(number_string, file);
                             fputs( "]\n", file); fclose(file);
                             break;
                         }
@@ -1297,7 +1297,7 @@ void generate_code(ast* root, FILE *file, local_variable local_variable_map[1000
             }
             else if (temp->root->root->child->token.type == FOR_KEYWORD){
                 fputs("jmp _for_break_", file);
-                sprintf(number_string, "%d", for_count/10);
+                sprintf(number_string, "%d", for_count/1000);
                 fputs(number_string, file);
                 fputs("\n", file);
                 generate_code(root->root, file, local_variable_map);

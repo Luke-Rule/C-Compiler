@@ -1,6 +1,7 @@
 # C-Compiler
 
-A Compiler from C to x86 GCC-8.1.0 64-bit assembly, written in C.
+A Compiler from C to x86 GCC-8.1.0 64-bit assembly, written in C. <br>
+Demo video: https://youtu.be/3RDCrEevYnY?si=WL78kWiOgsmGrwOY.
 
 ## About
 A simple C compiler based on the grammar and implementation timeline from the blog series [Writing a C Compiler](https://norasandler.com/2017/11/29/Write-a-Compiler.html/) by Nora Sandler, which can be used via a web editor which translates C code entered, displays the assembly created, runs the assembly and shows its output and return value. 
